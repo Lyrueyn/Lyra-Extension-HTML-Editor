@@ -111,3 +111,8 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 ## 1.5.1
 
 - 外部 assets 模式下不再把源里的 assets/... 误报为 Missing；Assets 标签在 Reader external 模式下隐藏。
+
+## 1.6.0
+
+- CSS 标签页新增 existing rule 选择器：下拉选择所有 <style> 规则，自动填入 selector/declarations；Apply 直接修改对应 style 块，不再只写 managed block。
+- CSS 规则列表显示所有 style 规则，点击即可加载编辑。

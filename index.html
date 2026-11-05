@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="vendor/codemirror/codemirror.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/hint/show-hint.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/fold/foldgutter.min.css"/>
-  <link rel="stylesheet" href="style.css?v=151"/>
+  <link rel="stylesheet" href="style.css?v=160"/>
 </head>
 <body>
 <div class="app">
@@ -122,6 +122,7 @@
         </div>
         <div id="tabCss" class="tab-content" hidden>
           <div class="tab-hint">Manage a &lt;style data-lyra-devtool&gt; block. Rules are saved inside the HTML source.</div>
+          <div class="style-field"><span>rule</span><select id="cssRuleSelect" class="css-rule-select"><option value="">Select existing CSS rule…</option></select></div>
           <div class="style-field"><span>selector</span><input id="cssSelector" type="text" spellcheck="false" placeholder=".card"/></div>
           <div class="style-field"><span>state</span><select id="cssState">
             <option value="">base</option>
@@ -205,6 +206,6 @@
 <script src="vendor/codemirror/addon/fold/foldcode.min.js"></script>
 <script src="vendor/codemirror/addon/fold/foldgutter.min.js"></script>
 <script src="vendor/codemirror/addon/selection/active-line.min.js"></script>
-<script src="app.js?v=151"></script>
+<script src="app.js?v=160"></script>
 </body>
 </html>

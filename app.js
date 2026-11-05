@@ -15,6 +15,7 @@
   let embeddedAssetMode = "package";
     let embeddedBaseHref = "";
     let pendingAssetRequest = null;
+  let cssRuleTarget = null;
 
   const state = {
     manifest: null,
@@ -1954,37 +1955,137 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     if (state.activeTab === "css") renderStyleBlocks();
   }
 
+  function parseCssRulesDetailed(css) {
+    const rules = [];
+    const re = /([^{}]+)\{([^{}]*)\}/g;
+    let m;
+    while ((m = re.exec(css))) {
+      const selector = String(m[1] || "").trim();
+      if (!selector || selector.startsWith("@")) continue;
+      const selectorStart = m.index;
+      const selectorEnd = m.index + m[1].length;
+      const declStart = selectorEnd + 1;
+      const declEnd = declStart + m[2].length;
+      rules.push({ selector: selector, declarations: m[2].trim(), selectorStart: selectorStart, selectorEnd: selectorEnd, declStart: declStart, declEnd: declEnd, ruleEnd: declEnd + 1 });
+    }
+    return rules;
+  }
+  function collectCssRuleTargets() {
+    const blocks = getStyleBlocks(getSource());
+    const rules = [];
+    blocks.forEach((block, blockIndex) => {
+      parseCssRulesDetailed(block.css).forEach((rule, ruleIndex) => {
+        rules.push({ blockIndex: blockIndex, ruleIndex: ruleIndex, block: block, selector: rule.selector, declarations: rule.declarations });
+      });
+    });
+    return { blocks: blocks, rules: rules };
+  }
+  function loadCssRuleTarget(blockIndex, ruleIndex) {
+    const all = collectCssRuleTargets();
+    const target = all.rules.find((r) => r.blockIndex === blockIndex && r.ruleIndex === ruleIndex);
+    if (!target) return;
+    cssRuleTarget = { blockIndex: blockIndex, ruleIndex: ruleIndex };
+    $("cssSelector").value = target.selector;
+    $("cssState").value = "";
+    $("cssDeclarations").value = target.declarations;
+    $("cssRuleSelect").value = blockIndex + ":" + ruleIndex;
+    document.querySelectorAll(".css-rule-item").forEach((el) => {
+      el.classList.toggle("active", el.dataset.block === String(blockIndex) && el.dataset.rule === String(ruleIndex));
+    });
+  }
+  function populateCssRuleSelect() {
+    const select = $("cssRuleSelect");
+    if (!select) return;
+    const all = collectCssRuleTargets();
+    const previous = cssRuleTarget ? cssRuleTarget.blockIndex + ":" + cssRuleTarget.ruleIndex : select.value;
+    select.innerHTML = "";
+    const empty = document.createElement("option");
+    empty.value = "";
+    empty.textContent = all.rules.length ? "Select existing CSS rule…" : "No CSS rules in <style>";
+    select.appendChild(empty);
+    for (const rule of all.rules) {
+      const option = document.createElement("option");
+      option.value = rule.blockIndex + ":" + rule.ruleIndex;
+      option.textContent = rule.selector + (rule.declarations ? "  ·  " + rule.declarations.slice(0, 48) : "");
+      select.appendChild(option);
+    }
+    if (previous && select.querySelector('option[value="' + previous + '"]')) select.value = previous;
+  }
+  function applyCssTargetRule() {
+    const draft = currentCssDraft();
+    const source = getSource();
+    const all = collectCssRuleTargets();
+    const target = all.rules.find((r) => r.blockIndex === cssRuleTarget.blockIndex && r.ruleIndex === cssRuleTarget.ruleIndex);
+    if (!target) { cssRuleTarget = null; return false; }
+    const block = all.blocks[target.blockIndex];
+    const fresh = parseCssRulesDetailed(block.css)[target.ruleIndex];
+    if (!fresh) { cssRuleTarget = null; return false; }
+    const declarations = tidyDeclarations(draft.declarations);
+    const indented = "\n  " + declarations.split("\n").join("\n  ") + "\n";
+    let css = block.css;
+    css = css.slice(0, fresh.declStart) + indented + css.slice(fresh.declEnd);
+    css = css.slice(0, fresh.selectorStart) + draft.selector + css.slice(fresh.selectorEnd);
+    const next = source.slice(0, block.contentStart) + css + source.slice(block.contentEnd);
+    applySourceEdit(next);
+    cssRuleTarget = null;
+    $("cssDeclarations").value = "";
+    renderStyleBlocks();
+    renderCssRules();
+    return true;
+  }
+  function deleteCssTargetRule() {
+    const source = getSource();
+    const all = collectCssRuleTargets();
+    const target = all.rules.find((r) => r.blockIndex === cssRuleTarget.blockIndex && r.ruleIndex === cssRuleTarget.ruleIndex);
+    if (target) {
+      const block = all.blocks[target.blockIndex];
+      const fresh = parseCssRulesDetailed(block.css)[target.ruleIndex];
+      if (fresh) {
+        const css = block.css.slice(0, fresh.selectorStart) + block.css.slice(fresh.ruleEnd);
+        const next = source.slice(0, block.contentStart) + css + source.slice(block.contentEnd);
+        applySourceEdit(next);
+      }
+    }
+    cssRuleTarget = null;
+    $("cssDeclarations").value = "";
+    renderStyleBlocks();
+    renderCssRules();
+    return true;
+  }
+
   function renderCssRules() {
     const host = $("cssRuleList");
     if (!host) return;
-    const block = findManagedStyle(getSource());
-    const rules = block ? parseCssRules(block.content) : [];
+    const all = collectCssRuleTargets();
     host.innerHTML = "";
-    if (!rules.length) {
+    if (!all.rules.length) {
       const empty = document.createElement("div");
       empty.className = "tab-hint";
-      empty.textContent = "No managed rules yet. Fill selector + declarations and click Apply rule.";
+      empty.textContent = "No CSS rules yet. Pick a rule below or fill selector + declarations and click Apply rule.";
       host.appendChild(empty);
+      populateCssRuleSelect();
       return;
     }
-    for (const rule of rules) {
+    for (const rule of all.rules) {
       const item = document.createElement("button");
       item.type = "button";
       item.className = "css-rule-item";
+      item.dataset.block = String(rule.blockIndex);
+      item.dataset.rule = String(rule.ruleIndex);
       const head = document.createElement("span");
       head.textContent = rule.selector;
       item.appendChild(head);
-      item.appendChild(document.createTextNode(rule.declarations));
-      item.addEventListener("click", () => {
-        const m = rule.selector.match(/^(.*?)(?:::[a-z-]+|:[a-z-]+)$/i);
-        $("cssSelector").value = m ? m[1].trim() : rule.selector;
-        $("cssState").value = m ? m[2] : "";
-        $("cssDeclarations").value = rule.declarations;
-        document.querySelectorAll(".css-rule-item").forEach((el) => el.classList.remove("active"));
+      const decl = document.createElement("span");
+      decl.className = "css-rule-decl";
+      decl.textContent = rule.declarations;
+      item.appendChild(decl);
+      if (cssRuleTarget && item.dataset.block === String(cssRuleTarget.blockIndex) && item.dataset.rule === String(cssRuleTarget.ruleIndex)) {
         item.classList.add("active");
-      });
+      }
+      item.addEventListener("click", () => loadCssRuleTarget(rule.blockIndex, rule.ruleIndex));
       host.appendChild(item);
     }
+    populateCssRuleSelect();
   }
   function loadCssRuleForDraft() {
     const draft = currentCssDraft();
@@ -2020,6 +2121,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     renderCssRules();
   }
   function applyCssRule() {
+    if (cssRuleTarget && applyCssTargetRule()) return;
     const draft = currentCssDraft();
     const selector = draft.selector || defaultSelectorForData(state.selectedData);
     if (!selector) return;
@@ -2033,6 +2135,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     writeManagedCss(rules);
   }
   function deleteCssRule() {
+    if (cssRuleTarget && deleteCssTargetRule()) return;
     const draft = currentCssDraft();
     const selector = draft.selector || defaultSelectorForData(state.selectedData);
     if (!selector) return;
@@ -2044,8 +2147,9 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     $("cssDeclarations").value = "";
   }
   function syncCssFieldsForSelection() {
-    if (!state.selectedData) return;
-    const selector = defaultSelectorForData(state.selectedData);
+    cssRuleTarget = null;
+    if (state.selectedData) {
+      const selector = defaultSelectorForData(state.selectedData);
     if (selector) {
       $("cssSelector").value = selector;
       $("cssDeclarations").value = "";
@@ -2053,6 +2157,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     }
   }
 
+      }
   function infoHtml(data) {
     return '<b>' + escapeHtml(data.tag || "") + "</b> · " +
       escapeHtml(data.selector || "") +
@@ -2539,6 +2644,12 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
       $("addStyleBlockBtn").addEventListener("click", addStyleBlock);
     $("deleteCssRuleBtn").addEventListener("click", deleteCssRule);
     $("cssSelector").addEventListener("change", loadCssRuleForDraft);
+    $("cssRuleSelect").addEventListener("change", () => {
+      const value = $("cssRuleSelect").value;
+      if (!value) { cssRuleTarget = null; return; }
+      const parts = value.split(":");
+      loadCssRuleTarget(Number(parts[0]), Number(parts[1]));
+    });
     $("cssState").addEventListener("change", loadCssRuleForDraft);
     $("domSearch").addEventListener("input", () => renderDomTree());
     $("domRenameBtn").addEventListener("click", renameSelectedTag);

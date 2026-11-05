@@ -290,3 +290,7 @@ body.inline-assets #tabAssets { display: none !important; }
 
 body.external-assets .dev-tab[data-tab="assets"],
 body.external-assets #tabAssets { display: none !important; }
+
+.css-rule-select { width: 100%; background: #0b1118; color: var(--text); border: 1px solid var(--line); border-radius: 5px; padding: 4px 5px; font: 10px Consolas, "Microsoft YaHei", monospace; outline: none; }
+.css-rule-select:focus { border-color: var(--accent); }
+.css-rule-item .css-rule-decl { color: #8fa3bc; display: block; margin-top: 3px; font-size: 10px; white-space: pre-wrap; }
