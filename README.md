@@ -91,3 +91,9 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 
 - 增加独立的 normalizeOpeningTags 后处理：即使 beautify 把 `<img>` 属性和空行排乱，也会强制把属性缩进标签 +2、删除开标签内的空行、`>` 回到标签列。
 - 打开/切换文档仍自动执行，Format 也走同一套兜底。
+
+## 1.3.2
+
+- 修复嵌入编辑器 assets 变更没有通知父 Notebook，导致新增/替换/删除图片不保存的问题。
+- Reader 嵌入时使用 inline assets：插入图片转 data URL，直接保存在 HTML 里。
+- 增加版本 query，避免 WebView2 缓存旧编辑器脚本。

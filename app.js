@@ -12,6 +12,7 @@
   let embeddedPendingDoc = null;
   let embeddedNotifyTimer = 0;
   let embeddedSuppressNotify = false;
+  let embeddedAssetMode = "package";
 
   const state = {
     manifest: null,
@@ -100,6 +101,7 @@
     embeddedSuppressNotify = true;
     try {
       note.html = d.html || "";
+      embeddedAssetMode = d.assetMode === "inline" ? "inline" : "package";
       if (d.title) note.meta.title = d.title;
       if (Array.isArray(d.assets)) { replaceEmbeddedAssets(d.assets); renderAssets(); }
       showCurrentNote();
@@ -762,10 +764,19 @@
   async function handleImageFile(file) {
     if (!file || !/^image\//.test(file.type || "")) return;
     const bytes = new Uint8Array(await file.arrayBuffer());
+    const alt = escapeAttr(file.name || "image");
+    if (EMBEDDED && embeddedAssetMode === "inline") {
+      const dataUrl = "data:" + (file.type || "image/png") + ";base64," + bytesToBase64(bytes);
+      insertTextAtCursor('\n<img src="' + dataUrl + '" alt="' + alt + '">\n');
+      markDirty();
+      schedulePreview(false);
+      scheduleSave();
+      return;
+    }
     const asset = await addAsset(bytes, file.name || "image", file.type || "image/png");
-    const alt = escapeAttr(file.name || asset.name || "image");
     insertTextAtCursor('\n<img src="' + asset.path + '" alt="' + alt + '">\n');
     renderAssets();
+    notifyParentAssets();
     $("saveState").textContent = "未保存";
     $("saveState").className = "save-state saving";
   }
@@ -1572,6 +1583,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     if (assetUsage(old.path) === 0) state.assets.delete(old.id);
     markDirty();
     renderAssets();
+    notifyParentAssets();
     schedulePreview(false);
     scheduleSave();
   }

@@ -284,3 +284,6 @@ body.embedded .app { height: 100vh; }
 .style-block-editor:focus { background: #0e1721; }
 .style-block-actions { display: flex; gap: 5px; padding: 5px 7px; border-top: 1px solid var(--line); }
 .style-block-actions button { padding: 3px 7px; font-size: 10px; }
+
+body.inline-assets .dev-tab[data-tab="assets"],
+body.inline-assets #tabAssets { display: none !important; }
