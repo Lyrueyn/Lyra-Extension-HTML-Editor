@@ -270,3 +270,8 @@ body.embedded .app { height: 100vh; }
 .cm-s-lyra .cm-ht-text { color: #ffd479; }
 .cm-s-lyra .cm-ht-media { color: #7aa2ff; }
 .cm-s-lyra .cm-ht-other { color: #9fb4c9; }
+
+.inline-style-row .color-input { width: 24px !important; height: 24px; padding: 1px !important; border-radius: 4px; cursor: pointer; background: #0b1118; }
+.preview-frame { transform-origin: top center; }
+
+.preview-wrap { overflow: auto; }

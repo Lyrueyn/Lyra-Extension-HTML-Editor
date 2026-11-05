@@ -361,6 +361,7 @@
         input.dataset.style = field.p;
         input.disabled = true;
         row.appendChild(input);
+        if (colorInput) row.appendChild(colorInput);
         section.appendChild(row);
       }
       hostEl.appendChild(section);
@@ -532,6 +533,21 @@
     input.addEventListener("change", () => {
       applyStyleObject({ [prop]: input.value.trim() });
     });
+    const isColor = /color$/i.test(prop) || prop === "fill" || prop === "stroke";
+    let colorInput = null;
+    if (isColor) {
+      colorInput = document.createElement("input");
+      colorInput.type = "color";
+      colorInput.className = "color-input";
+      colorInput.value = toHexColor(input.value);
+      colorInput.title = "Pick " + prop + " color";
+      colorInput.addEventListener("input", () => { input.value = colorInput.value; });
+      colorInput.addEventListener("change", () => {
+        input.value = colorInput.value;
+        input.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+      input.addEventListener("input", () => { colorInput.value = toHexColor(input.value); });
+    }
     const remove = document.createElement("button");
     remove.type = "button";
     remove.className = "remove";
@@ -540,6 +556,7 @@
     remove.addEventListener("click", () => applyStyleObject({ [prop]: "" }));
     row.appendChild(label);
     row.appendChild(input);
+    if (colorInput) row.appendChild(colorInput);
     row.appendChild(remove);
     return row;
   }
@@ -2348,6 +2365,10 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     $("noteSelect").addEventListener("change", (e) => selectNote(e.target.value));
     $("newNoteBtn").addEventListener("click", createNote);
     $("deleteNoteBtn").addEventListener("click", deleteNote);
+    $("previewZoom").addEventListener("change", () => {
+      const zoom = Number($("previewZoom").value) || 1;
+      $("previewFrame").style.zoom = String(zoom);
+    });
     $("reloadBtn").addEventListener("click", () => renderPreview(false));
     $("inspectBtn").addEventListener("click", () => {
       state.inspectMode = !state.inspectMode;
