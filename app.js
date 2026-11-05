@@ -44,6 +44,8 @@
     collapsedDom: new Set(),
     pendingReplaceAssetId: null,
     activeTab: "style",
+    consoleEntries: [],
+    consoleSeq: 0,
   };
 
   // ---------- 宿主桥接 ----------
@@ -1327,6 +1329,58 @@
     return { html: out, map };
   }
 
+  function consoleScript() {
+    return `
+    (function(){
+      var SOURCE = ${JSON.stringify(PREVIEW_SOURCE)};
+      function fmt(v) {
+        try {
+          if (typeof v === "string") return v;
+          if (v instanceof Error) return v.stack || (v.name + ": " + v.message);
+          return JSON.stringify(v);
+        } catch (e) { return String(v); }
+      }
+      function send(level, text, extra) {
+        try {
+          parent.postMessage(Object.assign({ source: SOURCE, type: "console", level: level, text: String(text || "").slice(0, 6000) }, extra || {}), "*");
+        } catch (e) {}
+      }
+      ["log", "info", "warn", "error", "debug"].forEach(function (level) {
+        var original = console[level];
+        console[level] = function () {
+          var args = Array.prototype.slice.call(arguments);
+          send(level, args.map(fmt).join(" "));
+          try { if (original) original.apply(console, arguments); } catch (e) {}
+        };
+      });
+      window.addEventListener("error", function (e) {
+        if (e.target && e.target !== window && e.target !== document) return;
+        send("error", e.message || "Script error", {
+          line: e.lineno || 0,
+          col: e.colno || 0,
+          stack: e.error && e.error.stack ? String(e.error.stack).slice(0, 4000) : ""
+        });
+      }, true);
+      window.addEventListener("unhandledrejection", function (e) {
+        send("error", "Unhandled promise rejection: " + fmt(e.reason), {
+          stack: e.reason && e.reason.stack ? String(e.reason.stack).slice(0, 4000) : ""
+        });
+      });
+      document.addEventListener("error", function (e) {
+        var t = e.target;
+        if (!t || !t.tagName) return;
+        var tag = String(t.tagName).toLowerCase();
+        if (["img", "video", "audio", "source", "link", "script", "iframe"].indexOf(tag) < 0) return;
+        var src = t.currentSrc || t.src || t.href || "";
+        var holder = t.closest ? t.closest("[data-lyra-src]") : null;
+        send("resource", "Failed to load <" + tag + "> " + src, {
+          srcId: holder ? (holder.getAttribute("data-lyra-src") || "") : (t.getAttribute("data-lyra-src") || "")
+        });
+      }, true);
+    })();
+    `.replace(/<\/script>/gi, "<\\/script>");
+  }
+
   // ---------- 注入预览的检查器 ----------
   function inspectorScript() {
     return `
@@ -1513,14 +1567,15 @@ img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
     const css = "<style>" + BASE_CSS + "</style>";
     const baseTag = embeddedBaseHref ? '<base href="' + escapeAttr(embeddedBaseHref) + '">' : "";
     const script = "<script>" + inspectorScript() + "<\/script>";
+    const consoleTag = "<script>" + consoleScript() + "<\/script>";
     let html = sourceAnnotated;
     if (isDoc) {
-      if (/<head[\s>]/i.test(html)) html = html.replace(/<head([^>]*)>/i, "<head$1>" + baseTag + css);
-      else html = css + html;
+      if (/<head[\s>]/i.test(html)) html = html.replace(/<head([^>]*)>/i, "<head$1>" + baseTag + css + consoleTag);
+      else html = css + consoleTag + html;
       if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, script + "</body>");
       else html += script;
     } else {
-      html = "<!doctype html><html><head><meta charset=\"utf-8\">" + baseTag + css + "</head><body>" + html + script + "</body></html>";
+      html = "<!doctype html><html><head><meta charset=\"utf-8\">" + baseTag + css + consoleTag + "</head><body>" + html + script + "</body></html>";
     }
     return html;
   }
@@ -1579,6 +1634,8 @@ img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
     } else if (data.type === "select") {
       applySelection(data, !!data.reselect);
       if (state.activeTab === "dom") markDomSelection();
+      } else if (data.type === "console") {
+        addConsoleEntry(data);
     }
   });
 
@@ -1606,20 +1663,93 @@ img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
     setInspectorEnabled(false);
   }
   // ---------- DOM tree / assets / tabs ----------
-  function switchTab(name) {
-    state.activeTab = name;
-    document.querySelectorAll(".dev-tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
-    document.querySelectorAll(".tab-content").forEach((el) => { el.hidden = el.id !== "tab" + name.charAt(0).toUpperCase() + name.slice(1); });
-    if (name === "dom") {
-      renderDomTree();
-      if (!state.domTree) postToPreview("getTree", {});
-    } else if (name === "assets") {
-      renderAssets();
-    } else if (name === "css") {
-      renderCssRules();
-      renderStyleBlocks();
+function switchTab(name) {
+      state.activeTab = name;
+      document.querySelectorAll(".dev-tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
+      document.querySelectorAll(".tab-content").forEach((el) => { el.hidden = el.id !== "tab" + name.charAt(0).toUpperCase() + name.slice(1); });
+      if (name === "dom") {
+        renderDomTree();
+        if (!state.domTree) postToPreview("getTree", {});
+      } else if (name === "assets") {
+        renderAssets();
+      } else if (name === "css") {
+        renderCssRules();
+        renderStyleBlocks();
+      } else if (name === "console") {
+        renderConsole();
+      }
     }
-  }
+    function updateConsoleBadge() {
+      const count = state.consoleEntries.length;
+      const badge = $("consoleTabCount");
+      if (badge) {
+        badge.hidden = count === 0;
+        badge.textContent = String(count);
+        badge.classList.toggle("error", state.consoleEntries.some((e) => e.level === "error" || e.level === "resource"));
+      }
+      const total = $("consoleCount");
+      if (total) total.textContent = count + (count === 1 ? " message" : " messages");
+    }
+    function addConsoleEntry(data) {
+      state.consoleEntries.push({
+        id: ++state.consoleSeq,
+        level: String(data.level || "log"),
+        text: String(data.text || ""),
+        srcId: String(data.srcId || ""),
+        line: Number(data.line) || 0,
+        col: Number(data.col) || 0,
+        stack: String(data.stack || ""),
+      });
+      if (state.consoleEntries.length > 200) state.consoleEntries.shift();
+      updateConsoleBadge();
+      if (state.activeTab === "console") renderConsole();
+    }
+    function renderConsole() {
+      const host = $("consoleList");
+      if (!host) return;
+      host.innerHTML = "";
+      if (!state.consoleEntries.length) {
+        const empty = document.createElement("div");
+        empty.className = "console-empty";
+        empty.textContent = "No messages yet.";
+        host.appendChild(empty);
+        return;
+      }
+      for (const entry of state.consoleEntries) {
+        const row = document.createElement("div");
+        row.className = "console-entry " + entry.level;
+        const level = document.createElement("div");
+        level.className = "console-level";
+        level.textContent = entry.level;
+        const body = document.createElement("div");
+        const text = document.createElement("div");
+        text.className = "console-text";
+        text.textContent = entry.text || "(empty)";
+        body.appendChild(text);
+        const sm = entry.srcId ? state.sourceMap[entry.srcId] : null;
+        const source = document.createElement("span");
+        source.className = "console-source";
+        if (sm) source.textContent = "Ln " + sm.line + " · click to jump";
+        else if (entry.level === "error" && entry.stack) source.textContent = entry.stack.split("\n")[0];
+        else if (entry.line) source.textContent = "line " + entry.line + (entry.col ? ":" + entry.col : "");
+        else if (entry.stack) source.textContent = entry.stack.split("\n")[0];
+        if (source.textContent) body.appendChild(source);
+        row.appendChild(level);
+        row.appendChild(body);
+        if (sm) {
+          row.dataset.srcId = entry.srcId;
+          row.addEventListener("click", () => {
+            state.selectedSrcId = entry.srcId;
+            state.selectedLine = sm.line;
+            $("inspectorLine").textContent = "Ln " + sm.line;
+            postToPreview("selectById", { srcId: entry.srcId });
+            highlightLine(sm.line, true, true, sm.start);
+          });
+        }
+        host.appendChild(row);
+      }
+      updateConsoleBadge();
+    }
   function markDomSelection() {
     document.querySelectorAll(".dom-row").forEach((el) => el.classList.toggle("active", el.dataset.srcId === state.selectedSrcId));
   }
@@ -3119,6 +3249,11 @@ img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
     document.querySelectorAll(".dev-tab").forEach((btn) => {
       btn.addEventListener("click", () => switchTab(btn.dataset.tab));
     });
+      $("consoleClearBtn").addEventListener("click", () => {
+        state.consoleEntries = [];
+        updateConsoleBadge();
+        renderConsole();
+      });
     $("notebookTitle").addEventListener("input", () => {
       if (!state.manifest) return;
       state.manifest.title = $("notebookTitle").value.trim() || "未命名笔记本";

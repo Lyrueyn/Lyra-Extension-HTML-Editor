@@ -335,3 +335,23 @@ body.embedded .app { height: 100vh; }
 .css-panel .css-actions button { width: 100%; }
 
 .source-pane.drop-target { outline: 2px dashed var(--accent); outline-offset: -3px; }
+
+
+/* Preview console */
+.console-toolbar { display: flex; align-items: center; gap: 8px; margin: 2px 0 6px; }
+.console-toolbar button { font-size: 10px; padding: 4px 8px; }
+.console-count { color: #617486; font-size: 10px; }
+.console-list { font: 11px/1.55 Consolas, "Cascadia Mono", monospace; max-height: calc(100vh - 260px); overflow: auto; border-top: 1px solid #1e2b38; }
+.console-empty { color: #617486; font-size: 11px; padding: 12px 0; }
+.console-entry { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 6px; padding: 6px 4px; border-bottom: 1px solid #16232e; cursor: default; }
+.console-entry[data-src-id] { cursor: pointer; }
+.console-entry[data-src-id]:hover { background: #15232e; }
+.console-level { font-size: 9px; text-transform: uppercase; letter-spacing: .03em; color: #7f93a8; padding-top: 1px; }
+.console-entry.error .console-level, .console-entry.resource .console-level { color: #ff9aaa; }
+.console-entry.warn .console-level { color: #ffd479; }
+.console-text { white-space: pre-wrap; word-break: break-word; color: #c8d3df; }
+.console-entry.error .console-text, .console-entry.resource .console-text { color: #ffb3c0; }
+.console-entry.warn .console-text { color: #ffe1a3; }
+.console-source { display: block; color: #617486; font-size: 10px; margin-top: 3px; }
+.console-tab-count { display: inline-flex; align-items: center; justify-content: center; min-width: 14px; height: 14px; margin-left: 3px; padding: 0 3px; border-radius: 7px; background: #223140; color: #c8d3df; font-size: 9px; line-height: 1; }
+.console-tab-count.error { background: #5a2230; color: #ffd0d8; }

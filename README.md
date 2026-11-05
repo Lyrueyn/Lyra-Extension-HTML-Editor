@@ -184,3 +184,11 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 ## 1.17.1
 
 - 预览 iframe 增加 allow="autoplay"，sandbox 与阅读模式对齐；背景视频在编辑预览可自动播放。
+
+
+## 1.17.2
+
+- Dev Tool 新增 Console 标签：捕获预览 iframe 的 console.log/info/warn/error/debug、JS 运行时错误、unhandled rejection、资源加载失败（img/video/audio/source/link/script/iframe）。
+- 资源失败条目带 `data-lyra-src`，点击跳到对应源码行；JS 错误显示 stack 首行。
+- 计数徽标；Clear 清空；最多保留 200 条。
+- 编辑器缓存版本 281。

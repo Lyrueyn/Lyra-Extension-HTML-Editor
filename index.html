@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="vendor/codemirror/codemirror.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/hint/show-hint.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/fold/foldgutter.min.css"/>
-  <link rel="stylesheet" href="style.css?v=280"/>
+  <link rel="stylesheet" href="style.css?v=281"/>
 </head>
 <body>
 <div class="app">
@@ -81,6 +81,7 @@
           <button class="dev-tab" data-tab="css" type="button">CSS</button>
           <button class="dev-tab" data-tab="dom" type="button">DOM</button>
           <button class="dev-tab" data-tab="assets" type="button">Assets</button>
+            <button class="dev-tab" data-tab="console" type="button">Console<span id="consoleTabCount" class="console-tab-count" hidden>0</span></button>
         </div>
         <div id="tabStyle" class="tab-content">
         <div id="selInfo" class="selection-info">Click an element in the preview. Turn on <b>Inspect</b> to intercept clicks. Alt+Click selects parent.</div>
@@ -169,6 +170,14 @@
           <div id="assetRefs" class="asset-refs"></div>
           <div id="assetList" class="asset-list"></div>
         </div>
+          <div id="tabConsole" class="tab-content" hidden>
+            <div class="console-toolbar">
+              <button id="consoleClearBtn" class="ghost" type="button">Clear</button>
+              <span id="consoleCount" class="console-count">0 messages</span>
+            </div>
+            <div class="tab-hint">Preview console: logs, JS errors and failed resource loads. Click an entry with a source element to jump.</div>
+            <div id="consoleList" class="console-list"></div>
+          </div>
       </div>
     </aside>
   </main>
@@ -203,6 +212,6 @@
 <script src="vendor/codemirror/addon/fold/foldcode.min.js"></script>
 <script src="vendor/codemirror/addon/fold/foldgutter.min.js"></script>
 <script src="vendor/codemirror/addon/selection/active-line.min.js"></script>
-<script src="app.js?v=280"></script>
+<script src="app.js?v=281"></script>
 </body>
 </html>
