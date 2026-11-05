@@ -13,6 +13,8 @@
   let embeddedNotifyTimer = 0;
   let embeddedSuppressNotify = false;
   let embeddedAssetMode = "package";
+    let embeddedBaseHref = "";
+    let pendingAssetRequest = null;
 
   const state = {
     manifest: null,
@@ -101,7 +103,8 @@
     embeddedSuppressNotify = true;
     try {
       note.html = d.html || "";
-      embeddedAssetMode = d.assetMode === "inline" ? "inline" : "package";
+      embeddedAssetMode = d.assetMode === "inline" ? "inline" : (d.assetMode === "external" ? "external" : "package");
+      embeddedBaseHref = d.baseHref || "";
       if (d.title) note.meta.title = d.title;
       if (Array.isArray(d.assets)) { replaceEmbeddedAssets(d.assets); renderAssets(); }
       showCurrentNote();
@@ -119,6 +122,7 @@
       if (d.channel !== EMBED_CHANNEL) return;
       if (d.type === "init" || d.type === "set-document") applyEmbeddedDoc(d);
       else if (d.type === "request-document") postToParent("document", { html: getSource() });
+      else if (d.type === "asset-result" && pendingAssetRequest && d.requestId === pendingAssetRequest.requestId) {         const pending = pendingAssetRequest;         pendingAssetRequest = null;         if (d.ok && d.path) {           insertTextAtCursor('\n<img src="' + escapeAttr(d.path) + '" alt="' + pending.alt + '">\n');           markDirty();           schedulePreview(false);           scheduleSave();         } else {           alert("图片保存失败：" + (d.error || "未知错误"));         }       }
     });
   }
 
@@ -765,6 +769,17 @@
     if (!file || !/^image\//.test(file.type || "")) return;
     const bytes = new Uint8Array(await file.arrayBuffer());
     const alt = escapeAttr(file.name || "image");
+    if (EMBEDDED && embeddedAssetMode === "external") {
+      const requestId = uid("asset");
+      pendingAssetRequest = { requestId: requestId, alt: alt };
+      postToParent("asset-request", {
+        requestId: requestId,
+        name: file.name || "image",
+        mime: file.type || "image/png",
+        data: bytesToBase64(bytes),
+      });
+      return;
+    }
     if (EMBEDDED && embeddedAssetMode === "inline") {
       const dataUrl = "data:" + (file.type || "image/png") + ";base64," + bytesToBase64(bytes);
       insertTextAtCursor('\n<img src="' + dataUrl + '" alt="' + alt + '">\n');
@@ -1348,15 +1363,16 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
 
   function injectPreview(sourceAnnotated, isDoc) {
     const css = "<style>" + BASE_CSS + "</style>";
+    const baseTag = embeddedBaseHref ? '<base href="' + escapeAttr(embeddedBaseHref) + '">' : "";
     const script = "<script>" + inspectorScript() + "<\/script>";
     let html = sourceAnnotated;
     if (isDoc) {
-      if (/<head[\s>]/i.test(html)) html = html.replace(/<head([^>]*)>/i, "<head$1>" + css);
+      if (/<head[\s>]/i.test(html)) html = html.replace(/<head([^>]*)>/i, "<head$1>" + baseTag + css);
       else html = css + html;
       if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, script + "</body>");
       else html += script;
     } else {
-      html = "<!doctype html><html><head><meta charset=\"utf-8\">" + css + "</head><body>" + html + script + "</body></html>";
+      html = "<!doctype html><html><head><meta charset=\"utf-8\">" + baseTag + css + "</head><body>" + html + script + "</body></html>";
     }
     return html;
   }

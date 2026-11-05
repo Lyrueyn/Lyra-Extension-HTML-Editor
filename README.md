@@ -102,3 +102,8 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 
 - 源码默认关闭软换行：长 `src`/data URI 不再折到行号下面造成错位；需要时点 Wrap 开启。
 - 修复嵌入模式 assets 新增/替换/删除通知父 Notebook；Reader 使用 inline data URL 保存图片。
+
+## 1.5.0
+
+- HTML_Reader 的图片改为外部 assets 文件：编辑器把图片发给父 Reader，Reader 通过宿主 host.file.save 写到 HTML 同目录 assets/，源码只写相对路径，不再内嵌 base64。
+- 预览通过 bookAssetsOrigin（原文件目录虚拟域名）解析相对图片。
