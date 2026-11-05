@@ -1,4 +1,4 @@
-:root {
+﻿:root {
   --bg: #0c0f14;
   --panel: #121820;
   --panel2: #18212b;
@@ -333,3 +333,5 @@ body.embedded .app { height: 100vh; }
 
 .css-panel .css-actions { display: block; margin: 6px 0 8px; }
 .css-panel .css-actions button { width: 100%; }
+
+.source-pane.drop-target { outline: 2px dashed var(--accent); outline-offset: -3px; }

@@ -620,6 +620,119 @@
     input.select();
   }
 
+  // ---------- 源码补全 ----------
+  const SOURCE_HTML_TAGS = ["a", "abbr", "address", "area", "article", "aside", "audio", "b", "base", "bdi", "bdo", "blockquote", "body", "br", "button", "canvas", "caption", "cite", "code", "col", "colgroup", "data", "datalist", "dd", "del", "details", "dfn", "dialog", "div", "dl", "dt", "em", "embed", "fieldset", "figcaption", "figure", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6", "head", "header", "hgroup", "hr", "html", "i", "iframe", "img", "input", "ins", "kbd", "label", "legend", "li", "link", "main", "map", "mark", "menu", "meta", "meter", "nav", "noscript", "object", "ol", "optgroup", "option", "output", "p", "picture", "pre", "progress", "q", "rp", "rt", "ruby", "s", "samp", "script", "section", "select", "slot", "small", "source", "span", "strong", "style", "sub", "summary", "sup", "table", "tbody", "td", "template", "textarea", "tfoot", "th", "thead", "time", "title", "tr", "track", "u", "ul", "var", "video", "wbr"];
+  const SOURCE_HTML_ATTRS = ["class", "id", "style", "title", "href", "src", "alt", "width", "height", "loading", "target", "rel", "type", "name", "value", "placeholder", "disabled", "checked", "selected", "multiple", "required", "readonly", "min", "max", "step", "pattern", "for", "action", "method", "enctype", "autocomplete", "inputmode", "tabindex", "role", "aria-label", "aria-hidden", "aria-describedby", "contenteditable", "draggable", "hidden", "lang", "dir", "data-"];
+  const SOURCE_VALUE_MAP = {
+    target: ["_blank", "_self", "_parent", "_top"],
+    rel: ["noopener", "noreferrer", "nofollow", "stylesheet"],
+    type: ["text", "button", "submit", "reset", "file", "checkbox", "radio", "email", "password", "number", "range", "date", "time", "url", "search", "color", "hidden", "text/css", "text/javascript", "module"],
+    method: ["get", "post", "dialog"],
+    loading: ["lazy", "eager"],
+    autocomplete: ["on", "off"],
+    inputmode: ["none", "text", "decimal", "numeric", "tel", "search", "email", "url"],
+    dir: ["ltr", "rtl", "auto"],
+    contenteditable: ["true", "false", "plaintext-only"],
+    draggable: ["true", "false"],
+  };
+  function sourceHtmlCatalog() {
+    const tags = new Set(SOURCE_HTML_TAGS);
+    const classes = new Set();
+    const ids = new Set();
+    const urls = new Set();
+    try {
+      const doc = new DOMParser().parseFromString(getSource(), "text/html");
+      doc.querySelectorAll("*").forEach((el) => {
+        tags.add(el.tagName.toLowerCase());
+        if (el.id) ids.add(el.id);
+        String(el.className || "").split(/\s+/).filter(Boolean).forEach((cls) => classes.add(cls));
+        ["href", "src"].forEach((attr) => { if (el.getAttribute(attr)) urls.add(el.getAttribute(attr)); });
+      });
+    } catch { }
+    return { tags: Array.from(tags).sort(), classes: Array.from(classes).sort(), ids: Array.from(ids).sort(), urls: Array.from(urls).sort() };
+  }
+  function insideHtmlTag(text) {
+    const lastOpen = text.lastIndexOf("<");
+    const lastClose = text.lastIndexOf(">");
+    if (lastOpen < 0 || lastOpen < lastClose) return null;
+    const fragment = text.slice(lastOpen + 1);
+    if (fragment.startsWith("/")) return { kind: "tag", tagStart: lastOpen + 2, partial: fragment.slice(1) };
+    const tagMatch = fragment.match(/^([a-zA-Z][\w:-]*)/);
+    if (!tagMatch) return { kind: "tag", tagStart: lastOpen + 1, partial: "" };
+    const tagName = tagMatch[1].toLowerCase();
+    const afterTag = fragment.slice(tagMatch[0].length);
+    if (!/^\s/.test(afterTag)) return { kind: "tag", tagStart: lastOpen + 1, partial: tagMatch[0] };
+    const valueMatch = afterTag.match(/([\w:-]+)\s*=\s*(["'])([^"']*)$/);
+    if (valueMatch) {
+      const valueStart = lastOpen + 1 + tagMatch[0].length + valueMatch.index + valueMatch[0].length - valueMatch[3].length;
+      return { kind: "value", tagName: tagName, attrName: valueMatch[1].toLowerCase(), valueStart: valueStart };
+    }
+    const wordMatch = afterTag.match(/[\w:-]*$/);
+    const word = wordMatch ? wordMatch[0] : "";
+    return { kind: "attr", tagName: tagName, word: word, wordStart: lastOpen + 1 + (tagMatch ? tagMatch[0].length : 0) + afterTag.length - word.length };
+  }
+  function sourceHintList(cm) {
+    const cursor = cm.getCursor();
+    const text = cm.getRange({ line: 0, ch: 0 }, cursor);
+    const mode = cm.getModeAt(cursor);
+    const helper = mode && mode.helperType ? mode.helperType : (mode && mode.name) || "";
+    if (helper === "css" || /css/i.test(helper)) {
+      const line = text.slice(text.lastIndexOf("\n") + 1);
+      const lastColon = line.lastIndexOf(":");
+      const lastSemi = Math.max(line.lastIndexOf(";"), line.lastIndexOf("{"), line.lastIndexOf("}"));
+      const wordMatch = line.match(/[a-zA-Z-]*$/);
+      const word = wordMatch ? wordMatch[0] : "";
+      if (lastColon > lastSemi && lastColon >= 0) {
+        const prop = (line.slice(lastSemi + 1, lastColon).match(/[-a-zA-Z]+/g) || []).pop() || "";
+        const valueStart = lastColon + 1 + (line.slice(lastColon + 1).match(/^\s*/) || [""])[0].length;
+        return { list: getValueSuggestions(prop), from: cm.posFromIndex(text.length - line.length + valueStart), to: cursor };
+      }
+      return { list: getCssProperties().filter((prop) => prop.includes(word)), from: cm.posFromIndex(text.length - word.length), to: cursor };
+    }
+    if (helper !== "html" && helper !== "xml" && !/html|xml/i.test(helper)) return null;
+    const inTag = insideHtmlTag(text);
+    if (inTag && inTag.kind === "tag") {
+      const partial = String(inTag.partial || "").toLowerCase();
+      return { list: Array.from(sourceHtmlCatalog().tags).filter((tag) => tag.startsWith(partial)), from: cm.posFromIndex(inTag.tagStart), to: cursor };
+    }
+    if (inTag && inTag.kind === "value") {
+      let list = [];
+      if (inTag.attrName === "class") list = Array.from(sourceHtmlCatalog().classes);
+      else if (inTag.attrName === "id") list = Array.from(sourceHtmlCatalog().ids);
+      else if (inTag.attrName === "href" || inTag.attrName === "src") list = Array.from(sourceHtmlCatalog().urls);
+      else list = SOURCE_VALUE_MAP[inTag.attrName] || [];
+      return { list: list, from: cm.posFromIndex(inTag.valueStart), to: cursor };
+    }
+    if (inTag && inTag.kind === "attr") {
+      return { list: SOURCE_HTML_ATTRS.filter((attr) => attr.startsWith(inTag.word)), from: cm.posFromIndex(inTag.wordStart), to: cursor };
+    }
+    const tagMatch = text.match(/<\/?([a-zA-Z][\w:-]*)?$/);
+    if (tagMatch) {
+      const typed = tagMatch[1] || "";
+      return { list: Array.from(sourceHtmlCatalog().tags).filter((tag) => tag.startsWith(typed)), from: cm.posFromIndex(text.length - typed.length), to: cursor };
+    }
+    return null;
+  }
+  function showCmHint(cm) {
+    if (!cm || !cm.showHint) return;
+    const mode = cm.getModeAt(cm.getCursor());
+    const helper = mode && mode.helperType ? mode.helperType : (mode && mode.name) || "";
+    try {
+      if (helper === "css" || /css/i.test(helper)) {
+        cm.showHint({ hint: (editor) => sourceHintList(editor) || CodeMirror.hint.css(editor), completeSingle: false });
+      } else if (helper === "javascript" || /javascript/i.test(helper)) {
+        cm.showHint({ hint: CodeMirror.hint.javascript, completeSingle: false });
+      } else {
+        cm.showHint({ hint: (editor) => sourceHintList(editor) || { list: [], from: editor.getCursor(), to: editor.getCursor() }, completeSingle: false });
+      }
+    } catch { }
+  }
+  function scheduleCmHint(cm, delay) {
+    clearTimeout(cm._lyraHintTimer);
+    cm._lyraHintTimer = setTimeout(() => {
+      if (!cm.state.completionActive) showCmHint(cm);
+    }, delay || 120);
+  }
   // ---------- CodeMirror 源码编辑器 ----------
   function getSource() {
     return state.mirror ? state.mirror.getValue() : "";
@@ -652,22 +765,6 @@
     } finally {
       state.suppressMirror = false;
     }
-  }
-  function showCmHint(cm) {
-    if (!cm || !cm.showHint) return;
-    const pos = cm.getCursor();
-    const mode = cm.getModeAt(pos);
-    const helper = mode && mode.helperType ? mode.helperType : (mode && mode.name) || "";
-    let hint = null;
-    if (helper === "html" || helper === "xml" || /html|xml/i.test(helper)) {
-      hint = CodeMirror.hint.html || CodeMirror.hint.xml;
-    } else if (helper === "css" || /css/i.test(helper)) {
-      hint = CodeMirror.hint.css;
-    } else if (helper === "javascript" || /javascript/i.test(helper)) {
-      hint = CodeMirror.hint.javascript;
-    }
-    if (!hint) hint = CodeMirror.hint.html || CodeMirror.hint.xml;
-    cm.showHint({ hint: hint, completeSingle: false });
   }
   const TAG_COLOR_GROUPS = {
     doc: ["html", "head", "body", "meta", "title", "link", "base"],
@@ -763,13 +860,20 @@
     cm.on("inputRead", (editor, change) => {
       if (state.suppressMirror) return;
       const text = change.text.join("");
-      // 输入 <、属性空格、=、引号时给出基础补全提示；Ctrl+Space 随时可手动打开。
-      if (text === "<" || text === " " || text === "=" || text === '"' || text === "'") {
-        clearTimeout(editor._lyraHintTimer);
-        editor._lyraHintTimer = setTimeout(() => {
-          if (!editor.state.completionActive) showCmHint(editor);
-        }, 120);
+      if (!text) return;
+      const mode = editor.getModeAt(editor.getCursor());
+      const helper = mode && mode.helperType ? mode.helperType : (mode && mode.name) || "";
+      let should = false;
+      if (helper === "html" || helper === "xml" || /html|xml/i.test(helper)) {
+        const before = editor.getRange({ line: 0, ch: 0 }, editor.getCursor());
+        should = !!insideHtmlTag(before) || /<\/?[a-zA-Z][\w:-]*$/.test(before) || /<\/?$/.test(before);
+      } else if (helper === "css" || /css/i.test(helper)) {
+        should = /[a-zA-Z-:{;]/.test(text);
+      } else if (helper === "javascript" || /javascript/i.test(helper)) {
+        should = text === ".";
       }
+      if (!should) return;
+      scheduleCmHint(editor, helper === "html" ? 90 : 140);
     });
     cm.on("cursorActivity", () => {
       const line = cm.getCursor().line + 1;
@@ -783,6 +887,41 @@
     if (!cm) return;
     cm.replaceRange(text, cm.getCursor());
     cm.focus();
+  }
+  function pickClipboardImage(event) {
+    const items = event.clipboardData && event.clipboardData.items;
+    if (!items) return null;
+    for (const item of items) {
+      if (item.kind === "file" && /^image\//.test(item.type || "")) return item.getAsFile();
+    }
+    return null;
+  }
+  function bindImageDrop() {
+    const pane = document.querySelector(".source-pane");
+    if (!pane) return;
+    pane.addEventListener("dragover", (event) => {
+      if (event.dataTransfer && Array.from(event.dataTransfer.types || []).includes("Files")) {
+        event.preventDefault();
+        pane.classList.add("drop-target");
+      }
+    });
+    pane.addEventListener("dragleave", () => pane.classList.remove("drop-target"));
+    pane.addEventListener("drop", (event) => {
+      const files = event.dataTransfer && event.dataTransfer.files;
+      if (!files || !files.length) return;
+      event.preventDefault();
+      pane.classList.remove("drop-target");
+      const file = Array.from(files).find((item) => /^image\//.test(item.type || ""));
+      if (file) handleImageFile(file);
+    });
+    document.addEventListener("paste", (event) => {
+      const active = document.activeElement;
+      if (!active || !active.closest(".source-pane")) return;
+      const file = pickClipboardImage(event);
+      if (!file) return;
+      event.preventDefault();
+      handleImageFile(file);
+    });
   }
   async function handleImageFile(file) {
     if (!file || !/^image\//.test(file.type || "")) return;
@@ -1840,12 +1979,22 @@ img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
       const del = document.createElement("button");
       del.type = "button"; del.className = "ghost danger-text"; del.textContent = "Delete";
       del.addEventListener("click", () => {
-        if (!confirm("Remove asset " + (asset.name || asset.path) + " from this notebook?")) return;
+        if (!confirm("Remove asset and its <img> references: " + (asset.name || asset.path) + "?")) return;
+        const path = asset.path;
+        for (const note of state.notes.values()) {
+          note.html = String(note.html || "").replace(/<img\b[^>]*>/gi, (tag) => (tag.includes('src="' + path + '"') || tag.includes("src='" + path + "'")) ? "" : tag);
+        }
         state.assets.delete(asset.id);
+        const note = currentNote();
+        if (note) {
+          setSourceValue(note.html || "", false);
+          state.sourceMap = annotateHtml(note.html || "").map;
+        }
         markDirty();
         schedulePreview(false);
         scheduleSave();
         renderAssets();
+        notifyParentAssets();
       });
       actions.appendChild(insert); actions.appendChild(replace); actions.appendChild(copy); actions.appendChild(del);
       card.appendChild(actions);
@@ -3030,7 +3179,8 @@ img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
   }
 
   bind();
-  window.__lyraDebug = { state, applyStyleObject, applySelection, renderPreview, getCssProperties, getValueSuggestions };
+  bindImageDrop();
+  window.__lyraDebug = { state, applyStyleObject, applySelection, renderPreview, getCssProperties, getValueSuggestions, sourceHintList: () => (typeof sourceHintList === "function" ? sourceHintList(state.mirror) : null) };
   if (EMBEDDED) initEmbedded();
   else init().catch(showError);
 })();

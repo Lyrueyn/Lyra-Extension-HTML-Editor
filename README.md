@@ -174,3 +174,9 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 - 编辑预览不再强制注入 body 字体/边距/颜色等基础样式，只保留 img/video/canvas/svg 的 max-width:100% 约束。
 - Reader 阅读模式也注入同一 image 约束，读/编辑图片尺寸一致。
 - 用户 HTML 的 body width/padding/font 在两种模式都按原样生效。
+
+## 1.17.0
+
+- 源码自动补全：HTML 标签/属性/class、id、href、src 值；CSS 属性/值；JS 基础上 `.` 补全（Ctrl+Space 仍可用）。
+- 图片拖拽到左侧源码区、粘贴剪贴板图片直接插入（Notebook package / Reader external 均走现有资产流程）。
+- Assets 删除同步移除所有笔记里的 <img> 引用并通知父级保存；修复孤立的 img 标签。
