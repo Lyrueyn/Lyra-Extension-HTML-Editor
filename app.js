@@ -3249,6 +3249,23 @@ function switchTab(name) {
     document.querySelectorAll(".dev-tab").forEach((btn) => {
       btn.addEventListener("click", () => switchTab(btn.dataset.tab));
     });
+      function useCustomSelector() {
+        const value = ($("cssCustomSelector").value || "").trim();
+        if (!value) return;
+        const existing = findRuleForSelector(value);
+        if (existing) {
+          loadCssRuleTarget(existing.blockIndex, existing.ruleIndex);
+          return;
+        }
+        setCssDraftSelectors([value]);
+        $("cssSelector").value = value;
+        $("cssRuleSelect").value = "sel:" + encodeURIComponent(value);
+        $("cssCustomSelector").value = "";
+      }
+      $("cssAddCustomBtn").addEventListener("click", useCustomSelector);
+      $("cssCustomSelector").addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); useCustomSelector(); }
+      });
       $("consoleClearBtn").addEventListener("click", () => {
         state.consoleEntries = [];
         updateConsoleBadge();

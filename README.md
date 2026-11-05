@@ -192,3 +192,8 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 - 资源失败条目带 `data-lyra-src`，点击跳到对应源码行；JS 错误显示 stack 首行。
 - 计数徽标；Clear 清空；最多保留 200 条。
 - 编辑器缓存版本 281。
+
+## 1.17.3
+
+- CSS 面板新增自定义 selector 输入：支持伪类/属性选择器，可加入组合 selector 后 Apply。
+- 缓存 282。
