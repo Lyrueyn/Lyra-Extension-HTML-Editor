@@ -125,3 +125,9 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 
 - CSS 标签页完全重做：规则列表+筛选、选中规则、逐条属性行、property/value 补全（自定义 autocomplete）、新增/删除规则；布局与 Style 标签页统一。
 - 自动补全弹层在下方空间不足或属性行时向上展开，避免挡住 Apply。
+
+## 1.9.0
+
+- CSS 标签页收束为单一 selector 下拉：选择后显示该 selector 的 property 行，可新增/删除/改值/Apply。
+- 去掉规则列表、New rule、规则筛选、Managed/Advanced 等杂乱入口。
+- 属性/值补全保留。

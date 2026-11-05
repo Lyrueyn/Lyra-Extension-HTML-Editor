@@ -324,3 +324,8 @@ body.external-assets #tabAssets { display: none !important; }
 .css-actions { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: center; margin-top: 8px; }
 .css-actions button { width: 100%; padding: 6px 8px; font-size: 11px; }
 .css-actions .primary { font-weight: 650; }
+
+.css-panel { padding: 2px 0 0; }
+.css-panel .css-rule-select { width: 100%; }
+.css-panel .css-actions { grid-template-columns: 1fr auto; }
+.css-panel .css-actions .ghost { justify-self: start; width: auto; }

@@ -1478,7 +1478,6 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     state.activeTab = name;
     document.querySelectorAll(".dev-tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
     document.querySelectorAll(".tab-content").forEach((el) => { el.hidden = el.id !== "tab" + name.charAt(0).toUpperCase() + name.slice(1); });
-        if (name === "css") renderCssDeclRows($("cssDeclarations").value);
     if (name === "dom") {
       renderDomTree();
       if (!state.domTree) postToPreview("getTree", {});
@@ -2019,12 +2018,12 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     select.innerHTML = "";
     const empty = document.createElement("option");
     empty.value = "";
-    empty.textContent = all.rules.length ? "Select existing CSS rule…" : "No CSS rules in <style>";
+    empty.textContent = all.rules.length ? "Select a selector…" : "No CSS rules in <style>";
     select.appendChild(empty);
     for (const rule of all.rules) {
       const option = document.createElement("option");
       option.value = rule.blockIndex + ":" + rule.ruleIndex;
-      option.textContent = rule.selector + (rule.declarations ? "  ·  " + rule.declarations.slice(0, 48) : "");
+      option.textContent = rule.selector;
       select.appendChild(option);
     }
     if (previous && select.querySelector('option[value="' + previous + '"]')) select.value = previous;
@@ -2215,40 +2214,6 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     if (select) select.value = "";
   }
   function renderCssRules() {
-    const host = $("cssRuleList");
-    if (!host) return;
-    const all = collectCssRuleTargets();
-    const query = cssRuleFilter.trim().toLowerCase();
-    const rules = query ? all.rules.filter((rule) => rule.selector.toLowerCase().includes(query)) : all.rules;
-    const count = $("cssRuleCount");
-    if (count) count.textContent = query ? rules.length + " / " + all.rules.length + " rules" : all.rules.length + " rules";
-    host.innerHTML = "";
-    if (!rules.length) {
-      const empty = document.createElement("div");
-      empty.className = "tab-hint";
-      empty.textContent = all.rules.length ? "No rule matches the filter." : "No CSS rules yet. Click + New rule to create one.";
-      host.appendChild(empty);
-      populateCssRuleSelect();
-      return;
-    }
-    for (const rule of rules) {
-      const item = document.createElement("button");
-      item.type = "button";
-      item.className = "css-rule-item";
-      item.dataset.block = String(rule.blockIndex);
-      item.dataset.rule = String(rule.ruleIndex);
-      const name = document.createElement("span");
-      name.className = "css-rule-name";
-      name.textContent = rule.selector;
-      item.appendChild(name);
-      const meta = document.createElement("span");
-      meta.className = "css-rule-meta";
-      meta.textContent = cssRuleItemHtml(rule).count + " properties · style #" + (rule.blockIndex + 1);
-      item.appendChild(meta);
-      if (cssRuleTarget && item.dataset.block === String(cssRuleTarget.blockIndex) && item.dataset.rule === String(cssRuleTarget.ruleIndex)) item.classList.add("active");
-      item.addEventListener("click", () => loadCssRuleTarget(rule.blockIndex, rule.ruleIndex));
-      host.appendChild(item);
-    }
     populateCssRuleSelect();
   }
   function loadCssRuleForDraft() {
@@ -2286,6 +2251,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
   }
   function applyCssRule() {
     syncCssDeclarationsFromRows();
+    if (!cssRuleTarget) return;
     if (cssRuleTarget && applyCssTargetRule()) return;
     const draft = currentCssDraft();
     const selector = draft.selector || defaultSelectorForData(state.selectedData);
@@ -2375,7 +2341,6 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     $("domNewTag").value = entry.tag;
     syncInspector(data.computed || {});
     renderInlineStyles(data.inlineStyle || "");
-    syncCssFieldsForSelection();
     setInspectorEnabled(true);
     highlightLine(entry.line, !isReselect && !fromSource, !isReselect && !fromSource, entry.start);
   }
@@ -2814,7 +2779,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     attachAutocomplete($("cssSelector"), (typed) => cssSelectorSuggestions(typed), (picked) => { $("cssSelector").value = picked; }, { enterAcceptsFirst: false });
     $("cssRuleSelect").addEventListener("change", () => {
       const value = $("cssRuleSelect").value;
-      if (!value) { cssRuleTarget = null; return; }
+      if (!value) { cssRuleTarget = null; renderCssDeclRows(""); return; }
       const parts = value.split(":");
       loadCssRuleTarget(Number(parts[0]), Number(parts[1]));
     });
