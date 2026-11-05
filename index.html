@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="vendor/codemirror/codemirror.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/hint/show-hint.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/fold/foldgutter.min.css"/>
-  <link rel="stylesheet" href="style.css?v=210"/>
+  <link rel="stylesheet" href="style.css?v=220"/>
 </head>
 <body>
 <div class="app">
@@ -124,15 +124,17 @@
           <section class="css-section css-panel">
             <div class="style-field"><span>selector</span><select id="cssRuleSelect" class="css-rule-select"><option value="">Select a selector…</option></select></div>
             <div class="css-editor-label">properties</div>
-            <div id="cssDeclRows" class="css-decl-rows"></div>
+            <div class="autocomplete-wrap"><input id="cssRulePropSearch" class="css-prop-search" type="text" placeholder="Search any CSS property…" spellcheck="false" autocomplete="off"/></div>
+            <div class="tab-hint">Type to search all supported CSS properties; choose one to add a declaration for the selected selector.</div>
+            <div id="cssDeclRows" class="inline-style-rows"></div>
             <div class="css-actions">
-              <button id="addCssDeclBtn" class="ghost" type="button">＋ property</button>
               <button id="applyCssRuleBtn" class="primary" type="button">Apply</button>
             </div>
             <div style="display:none">
               <input id="cssSelector" type="text"/>
               <select id="cssState"><option value=""></option></select>
               <textarea id="cssDeclarations"></textarea>
+              <button id="addCssDeclBtn" type="button"></button>
               <button id="applyCssDeclsBtn" type="button"></button>
               <button id="deleteCssRuleBtn" type="button"></button>
               <button id="addStyleBlockBtn" type="button"></button>
@@ -199,6 +201,6 @@
 <script src="vendor/codemirror/addon/fold/foldcode.min.js"></script>
 <script src="vendor/codemirror/addon/fold/foldgutter.min.js"></script>
 <script src="vendor/codemirror/addon/selection/active-line.min.js"></script>
-<script src="app.js?v=210"></script>
+<script src="app.js?v=220"></script>
 </body>
 </html>

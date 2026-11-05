@@ -2268,50 +2268,34 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
   function appendCssDeclRow(prop, value) {
     const host = $("cssDeclRows");
     if (!host) return null;
-    populateCssPropertyCatalog();
     const row = document.createElement("div");
-    row.className = "css-decl-row";
-    const name = document.createElement("input");
-    name.className = "css-decl-prop";
-    name.placeholder = "property";
-    name.spellcheck = false;
-    name.value = prop || "";
-    name.setAttribute("list", "cssPropertyCatalog");
-    const colon = document.createElement("span");
-    colon.textContent = ":";
-    colon.style.display = "none";
-    const val = document.createElement("input");
-    val.className = "css-decl-value";
-    val.placeholder = "value";
-    val.spellcheck = false;
-    val.value = value || "";
+    row.className = "inline-style-row";
+    row.dataset.prop = prop || "";
+    const label = document.createElement("span");
+    label.className = "prop";
+    label.textContent = prop || "";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = value || "";
+    input.spellcheck = false;
+    input.placeholder = "value";
+    attachAutocomplete(input, (typed) => {
+      const q = String(typed || "").trim().toLowerCase();
+      const all = getValueSuggestions(prop || "");
+      return q ? all.filter((v) => v.toLowerCase().includes(q)) : all;
+    }, (picked) => {
+      input.value = picked;
+      syncCssDeclarationsFromRows();
+    }, { enterAcceptsFirst: false, above: true });
+    input.addEventListener("input", syncCssDeclarationsFromRows);
     const remove = document.createElement("button");
     remove.type = "button";
-    remove.className = "css-decl-remove";
+    remove.className = "remove";
     remove.textContent = "×";
     remove.title = "Remove property";
     remove.addEventListener("click", () => { row.remove(); syncCssDeclarationsFromRows(); });
-    name.addEventListener("input", syncCssDeclarationsFromRows);
-    val.addEventListener("input", syncCssDeclarationsFromRows);
-    const valueCatalog = document.createElement("datalist");
-    valueCatalog.id = uid("css-value");
-    const refreshValueCatalog = () => {
-      valueCatalog.innerHTML = "";
-      for (const item of getValueSuggestions(name.value)) {
-        const option = document.createElement("option");
-        option.value = item;
-        valueCatalog.appendChild(option);
-      }
-    };
-    val.setAttribute("list", valueCatalog.id);
-    name.addEventListener("input", refreshValueCatalog);
-    refreshValueCatalog();
-    row.appendChild(valueCatalog);
-    val.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") { event.preventDefault(); appendCssDeclRow("", ""); }
-    });
-    row.appendChild(name);
-    row.appendChild(val);
+    row.appendChild(label);
+    row.appendChild(input);
     row.appendChild(remove);
     host.appendChild(row);
     return row;
@@ -2321,8 +2305,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     if (!host) return;
     host.innerHTML = "";
     const pairs = parseCssDeclarationPairs(text || "");
-    if (!pairs.length) appendCssDeclRow("", "");
-    else pairs.forEach((pair) => appendCssDeclRow(pair.prop, pair.value));
+    pairs.forEach((pair) => appendCssDeclRow(pair.prop, pair.value));
     syncCssDeclarationsFromRows();
   }
   function syncCssDeclarationsFromRows() {
@@ -2330,14 +2313,14 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     const target = $("cssDeclarations");
     if (!host || !target) return;
     const lines = [];
-    host.querySelectorAll(".css-decl-row").forEach((row) => {
-      const name = row.querySelector(".css-decl-prop").value.trim();
-      const value = row.querySelector(".css-decl-value").value.trim();
+    host.querySelectorAll(".inline-style-row").forEach((row) => {
+      const name = String(row.dataset.prop || "").trim();
+      const input = row.querySelector("input");
+      const value = input ? input.value.trim() : "";
       if (name) lines.push(name + ": " + value + ";");
     });
     target.value = lines.join("\n");
   }
-
   function cssRuleItemHtml(rule) {
     const count = splitCssDeclarations(rule.declarations).filter((part) => part.includes(":")).length;
     return { count: count };
@@ -2934,6 +2917,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
       }
     });
     $("cssState").addEventListener("change", loadCssRuleForDraft);
+    attachAutocomplete($("cssRulePropSearch"), (typed) => {       const q = String(typed || "").trim().toLowerCase();       let list = getCssProperties();       if (q) list = list.filter((prop) => prop.toLowerCase().includes(q));       return list.sort((a, b) => {         const as = a.toLowerCase().startsWith(q) ? 0 : 1;         const bs = b.toLowerCase().startsWith(q) ? 0 : 1;         return as - bs || a.localeCompare(b);       });     }, (prop) => {       $("cssRulePropSearch").value = "";       const row = appendCssDeclRow(prop, "");       syncCssDeclarationsFromRows();       if (row) { const input = row.querySelector("input"); if (input) input.focus(); }     });
     $("domSearch").addEventListener("input", () => renderDomTree());
     $("domRenameBtn").addEventListener("click", renameSelectedTag);
     $("domDeleteBtn").addEventListener("click", deleteSelectedElement);

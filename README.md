@@ -144,3 +144,10 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 - CSS property/value 补全改回原生 datalist，不再用遮挡界面的自绘大弹层。
 - Assets 标签在 external 模式不再隐藏：显示 HTML 引用的 assets/ 外部文件卡片，支持预览（bookAssetsOrigin）和 Copy path。
 - Assets 顶部说明根据 package/external/inline 动态变化；package 模式仍显示 .lyrnb 内资产。
+
+## 1.12.0
+
+- CSS 声明区完全照搬 Style 标签页：深色 property 搜索 + 深色补全弹层 + inline-style-row 属性行（属性标签、值输入、×）。
+- 移除原生 datalist 白底弹层。
+- 属性搜索选中后添加一行，值输入用同一套深色补全；Apply 写回 selector 的 CSS 规则。
+- Assets 标签在 external 模式显示 assets/ 引用卡片；package 模式显示 .lyrnb 内资产。
