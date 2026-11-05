@@ -46,6 +46,8 @@
     activeTab: "style",
     consoleEntries: [],
     consoleSeq: 0,
+    matchedMarks: [],
+    matchTimer: 0,
   };
 
   // ---------- 宿主桥接 ----------
@@ -840,6 +842,69 @@
     });
   }
 
+  const MATCH_VOID_TAGS = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
+  function findTagPairs(source) {
+    const pairs = [];
+    const stack = [];
+    const re = /<!--[\s\S]*?-->|<!\[CDATA\[[\s\S]*?\]\]>|<![^>]*>|<\/?([a-zA-Z][\w:-]*)(?:"[^"]*"|'[^']*'|[^>"'])*>/g;
+    let match;
+    while ((match = re.exec(source))) {
+      const token = match[0];
+      if (/^<[!?]/.test(token)) continue;
+      const name = (match[1] || "").toLowerCase();
+      if (!name || MATCH_VOID_TAGS.has(name)) continue;
+      const closing = /^<\//.test(token);
+      const selfClosing = /\/\s*>$/.test(token);
+      if (!closing) {
+        if (!selfClosing) stack.push({ name: name, start: match.index, end: match.index + token.length });
+      } else {
+        for (let i = stack.length - 1; i >= 0; i -= 1) {
+          if (stack[i].name !== name) continue;
+          const open = stack[i];
+          pairs.push({ name: name, openStart: open.start, openEnd: open.end, closeStart: match.index, closeEnd: match.index + token.length });
+          stack.length = i;
+          break;
+        }
+      }
+    }
+    return pairs;
+  }
+  function findPairsAtCursor(source, index) {
+    const pairs = findTagPairs(source);
+    const found = pairs.filter((pair) => (index >= pair.openStart && index <= pair.openEnd) ||
+      (index > pair.openEnd && index < pair.closeStart) ||
+      (index >= pair.closeStart && index <= pair.closeEnd));
+    found.sort((a, b) => (a.closeEnd - a.openStart) - (b.closeEnd - b.openStart));
+    return found;
+  }
+  function clearMatchedTags() {
+    const cm = state.mirror;
+    if (!cm) return;
+    (state.matchedMarks || []).forEach((mark) => { try { mark.clear(); } catch { } });
+    state.matchedMarks = [];
+  }
+  function updateMatchedTags() {
+    const cm = state.mirror;
+    if (!cm) return;
+    clearMatchedTags();
+    try {
+      const source = cm.getValue();
+      const pairs = findPairsAtCursor(source, cm.indexFromPos(cm.getCursor()));
+      if (!pairs.length) return;
+      const add = (pair, level) => {
+        const group = TAG_COLOR_LOOKUP[pair.name] || "other";
+        const className = "cm-matched-tag cm-match-" + group + " cm-match-level-" + Math.min(level, 2);
+        state.matchedMarks.push(cm.markText(cm.posFromIndex(pair.openStart), cm.posFromIndex(pair.openEnd), { className: className }));
+        state.matchedMarks.push(cm.markText(cm.posFromIndex(pair.closeStart), cm.posFromIndex(pair.closeEnd), { className: className }));
+      };
+      pairs.slice(0, 3).forEach((pair, level) => add(pair, level));
+    } catch { }
+  }
+  function scheduleMatchedTags() {
+    clearTimeout(state.matchTimer);
+    state.matchTimer = setTimeout(updateMatchedTags, 20);
+  }
+
   function initSourceEditor() {
     if (state.mirror || !window.CodeMirror) return;
     const cm = CodeMirror($("sourceEditor"), {
@@ -867,6 +932,7 @@
     state.mirror = cm;
     cm.on("change", () => {
       if (state.suppressMirror) return;
+        scheduleMatchedTags();
       const note = currentNote();
       if (note) note.html = cm.getValue();
       state.sourceMap = annotateHtml(cm.getValue()).map;
@@ -897,6 +963,7 @@
       const line = cm.getCursor().line + 1;
       $("sourcePos").textContent = "Ln " + line;
       selectFromSourceCursor();
+        scheduleMatchedTags();
     });
   }
 
