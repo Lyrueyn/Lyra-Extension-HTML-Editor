@@ -131,3 +131,10 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 - CSS 标签页收束为单一 selector 下拉：选择后显示该 selector 的 property 行，可新增/删除/改值/Apply。
 - 去掉规则列表、New rule、规则筛选、Managed/Advanced 等杂乱入口。
 - 属性/值补全保留。
+
+## 1.10.0
+
+- selector 下拉加入所有默认 HTML 标签。
+- 自动检测 DOM class：.class、tag.class、父子/后代链（.a .b、.a > .b）、三级链。
+- 支持多 selector 规则（.a, .b）作为完整条目选中，编辑属性时保留逗号列表。
+- 选中未存在的 selector（标签/class）后编辑属性，Apply 会自动创建对应规则。
