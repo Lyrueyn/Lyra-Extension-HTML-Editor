@@ -180,3 +180,7 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 - 源码自动补全：HTML 标签/属性/class、id、href、src 值；CSS 属性/值；JS 基础上 `.` 补全（Ctrl+Space 仍可用）。
 - 图片拖拽到左侧源码区、粘贴剪贴板图片直接插入（Notebook package / Reader external 均走现有资产流程）。
 - Assets 删除同步移除所有笔记里的 <img> 引用并通知父级保存；修复孤立的 img 标签。
+
+## 1.17.1
+
+- 预览 iframe 增加 allow="autoplay"，sandbox 与阅读模式对齐；背景视频在编辑预览可自动播放。
