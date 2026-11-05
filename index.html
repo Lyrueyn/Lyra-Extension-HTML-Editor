@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="vendor/codemirror/codemirror.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/hint/show-hint.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/fold/foldgutter.min.css"/>
-  <link rel="stylesheet" href="style.css?v=160"/>
+  <link rel="stylesheet" href="style.css?v=170"/>
 </head>
 <body>
 <div class="app">
@@ -134,7 +134,10 @@
             <option value="::after">::after</option>
           </select></div>
           <div class="css-editor-label">declarations</div>
-          <textarea id="cssDeclarations" class="css-declarations" spellcheck="false" placeholder="background: #18212b;&#10;color: #eaf1f9;&#10;border-radius: 8px;"></textarea>
+          <div id="cssDeclRows" class="css-decl-rows"></div>
+          <div class="action-row"><button id="addCssDeclBtn" class="ghost" type="button">＋ property</button><button id="applyCssDeclsBtn" class="ghost" type="button">Apply declarations</button></div>
+          <textarea id="cssDeclarations" class="css-declarations" spellcheck="false" style="display:none"></textarea>
+          <datalist id="cssPropertyCatalog"></datalist>
           <div class="action-row">
             <button id="applyCssRuleBtn" class="ghost" type="button">Apply rule</button>
             <button id="deleteCssRuleBtn" class="ghost danger-text" type="button">Delete rule</button>
@@ -206,6 +209,6 @@
 <script src="vendor/codemirror/addon/fold/foldcode.min.js"></script>
 <script src="vendor/codemirror/addon/fold/foldgutter.min.js"></script>
 <script src="vendor/codemirror/addon/selection/active-line.min.js"></script>
-<script src="app.js?v=160"></script>
+<script src="app.js?v=170"></script>
 </body>
 </html>

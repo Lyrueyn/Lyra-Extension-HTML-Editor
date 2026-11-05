@@ -116,3 +116,7 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 
 - CSS 标签页新增 existing rule 选择器：下拉选择所有 <style> 规则，自动填入 selector/declarations；Apply 直接修改对应 style 块，不再只写 managed block。
 - CSS 规则列表显示所有 style 规则，点击即可加载编辑。
+
+## 1.7.0
+
+- CSS 标签页改为逐条属性行编辑：选中规则后每个 declaration 显示为 property + value 输入行，可增删属性；Apply 写回对应 style 规则，和 Style 标签页的逐项编辑一致。

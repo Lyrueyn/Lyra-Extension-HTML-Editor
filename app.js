@@ -1463,6 +1463,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     state.activeTab = name;
     document.querySelectorAll(".dev-tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
     document.querySelectorAll(".tab-content").forEach((el) => { el.hidden = el.id !== "tab" + name.charAt(0).toUpperCase() + name.slice(1); });
+        if (name === "css") renderCssDeclRows($("cssDeclarations").value);
     if (name === "dom") {
       renderDomTree();
       if (!state.domTree) postToPreview("getTree", {});
@@ -1988,6 +1989,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     $("cssSelector").value = target.selector;
     $("cssState").value = "";
     $("cssDeclarations").value = target.declarations;
+    renderCssDeclRows(target.declarations);
     $("cssRuleSelect").value = blockIndex + ":" + ruleIndex;
     document.querySelectorAll(".css-rule-item").forEach((el) => {
       el.classList.toggle("active", el.dataset.block === String(blockIndex) && el.dataset.rule === String(ruleIndex));
@@ -2029,6 +2031,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     applySourceEdit(next);
     cssRuleTarget = null;
     $("cssDeclarations").value = "";
+    renderCssDeclRows("");
     renderStyleBlocks();
     renderCssRules();
     return true;
@@ -2051,6 +2054,89 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     renderStyleBlocks();
     renderCssRules();
     return true;
+  }
+
+  function parseCssDeclarationPairs(text) {
+    const pairs = [];
+    for (const part of splitCssDeclarations(text)) {
+      const colon = part.indexOf(":");
+      if (colon < 0) continue;
+      const prop = part.slice(0, colon).trim();
+      const value = part.slice(colon + 1).trim();
+      if (prop) pairs.push({ prop: prop, value: value });
+    }
+    return pairs;
+  }
+  function populateCssPropertyCatalog() {
+    const list = $("cssPropertyCatalog");
+    if (!list) return;
+    if (list.dataset.filled === "1") return;
+    let props = [];
+    try { props = getCssProperties(); } catch { props = []; }
+    for (const prop of props) {
+      const option = document.createElement("option");
+      option.value = prop;
+      list.appendChild(option);
+    }
+    list.dataset.filled = "1";
+  }
+  function appendCssDeclRow(prop, value) {
+    const host = $("cssDeclRows");
+    if (!host) return null;
+    populateCssPropertyCatalog();
+    const row = document.createElement("div");
+    row.className = "css-decl-row";
+    const name = document.createElement("input");
+    name.className = "css-decl-prop";
+    name.setAttribute("list", "cssPropertyCatalog");
+    name.placeholder = "property";
+    name.spellcheck = false;
+    name.value = prop || "";
+    const colon = document.createElement("span");
+    colon.textContent = ":";
+    colon.style.display = "none";
+    const val = document.createElement("input");
+    val.className = "css-decl-value";
+    val.placeholder = "value";
+    val.spellcheck = false;
+    val.value = value || "";
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "css-decl-remove";
+    remove.textContent = "×";
+    remove.title = "Remove property";
+    remove.addEventListener("click", () => { row.remove(); syncCssDeclarationsFromRows(); });
+    name.addEventListener("input", syncCssDeclarationsFromRows);
+    val.addEventListener("input", syncCssDeclarationsFromRows);
+    val.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") { event.preventDefault(); appendCssDeclRow("", ""); }
+    });
+    row.appendChild(name);
+    row.appendChild(val);
+    row.appendChild(remove);
+    host.appendChild(row);
+    return row;
+  }
+  function renderCssDeclRows(text) {
+    const host = $("cssDeclRows");
+    if (!host) return;
+    host.innerHTML = "";
+    const pairs = parseCssDeclarationPairs(text || "");
+    if (!pairs.length) appendCssDeclRow("", "");
+    else pairs.forEach((pair) => appendCssDeclRow(pair.prop, pair.value));
+    syncCssDeclarationsFromRows();
+  }
+  function syncCssDeclarationsFromRows() {
+    const host = $("cssDeclRows");
+    const target = $("cssDeclarations");
+    if (!host || !target) return;
+    const lines = [];
+    host.querySelectorAll(".css-decl-row").forEach((row) => {
+      const name = row.querySelector(".css-decl-prop").value.trim();
+      const value = row.querySelector(".css-decl-value").value.trim();
+      if (name) lines.push(name + ": " + value + ";");
+    });
+    target.value = lines.join("\n");
   }
 
   function renderCssRules() {
@@ -2094,7 +2180,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     if (!block) return;
     const key = cssRuleKey(draft.selector, draft.state);
     const rule = parseCssRules(block.content).find((r) => r.selector === key);
-    if (rule) $("cssDeclarations").value = rule.declarations;
+    if (rule) { $("cssDeclarations").value = rule.declarations; renderCssDeclRows(rule.declarations); }
   }
   function writeManagedCss(rules) {
     const source = getSource();
@@ -2121,6 +2207,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     renderCssRules();
   }
   function applyCssRule() {
+    syncCssDeclarationsFromRows();
     if (cssRuleTarget && applyCssTargetRule()) return;
     const draft = currentCssDraft();
     const selector = draft.selector || defaultSelectorForData(state.selectedData);
@@ -2641,6 +2728,8 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
       addInlineProperty(prop);
     });
     $("applyCssRuleBtn").addEventListener("click", applyCssRule);
+        $("addCssDeclBtn").addEventListener("click", () => { appendCssDeclRow("", ""); });
+        $("applyCssDeclsBtn").addEventListener("click", () => { syncCssDeclarationsFromRows(); applyCssRule(); });
       $("addStyleBlockBtn").addEventListener("click", addStyleBlock);
     $("deleteCssRuleBtn").addEventListener("click", deleteCssRule);
     $("cssSelector").addEventListener("change", loadCssRuleForDraft);
