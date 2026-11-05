@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="vendor/codemirror/codemirror.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/hint/show-hint.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/fold/foldgutter.min.css"/>
-  <link rel="stylesheet" href="style.css?v=200"/>
+  <link rel="stylesheet" href="style.css?v=210"/>
 </head>
 <body>
 <div class="app">
@@ -139,6 +139,7 @@
               <div id="cssRuleList"></div>
               <div id="styleBlockList"></div>
               <div id="cssRuleBadge"></div>
+              <datalist id="cssPropertyCatalog"></datalist>
             </div>
           </section>
         </div>
@@ -159,7 +160,7 @@
           <div id="domTree" class="dom-tree"></div>
         </div>
         <div id="tabAssets" class="tab-content" hidden>
-          <div class="tab-hint">Images stored inside this .lyrnb. Insert adds an &lt;img&gt; at the editor cursor.</div>
+          <div class="tab-hint" id="assetModeHint">Images stored inside this .lyrnb. Insert adds an &lt;img&gt; at the editor cursor.</div>
           <div class="asset-toolbar"><button id="refreshAssetsBtn" class="ghost" type="button">Check references</button></div>
           <div id="assetRefs" class="asset-refs"></div>
           <div id="assetList" class="asset-list"></div>
@@ -198,6 +199,6 @@
 <script src="vendor/codemirror/addon/fold/foldcode.min.js"></script>
 <script src="vendor/codemirror/addon/fold/foldgutter.min.js"></script>
 <script src="vendor/codemirror/addon/selection/active-line.min.js"></script>
-<script src="app.js?v=200"></script>
+<script src="app.js?v=210"></script>
 </body>
 </html>

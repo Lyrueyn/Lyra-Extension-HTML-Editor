@@ -138,3 +138,9 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 - 自动检测 DOM class：.class、tag.class、父子/后代链（.a .b、.a > .b）、三级链。
 - 支持多 selector 规则（.a, .b）作为完整条目选中，编辑属性时保留逗号列表。
 - 选中未存在的 selector（标签/class）后编辑属性，Apply 会自动创建对应规则。
+
+## 1.11.0
+
+- CSS property/value 补全改回原生 datalist，不再用遮挡界面的自绘大弹层。
+- Assets 标签在 external 模式不再隐藏：显示 HTML 引用的 assets/ 外部文件卡片，支持预览（bookAssetsOrigin）和 Copy path。
+- Assets 顶部说明根据 package/external/inline 动态变化；package 模式仍显示 .lyrnb 内资产。

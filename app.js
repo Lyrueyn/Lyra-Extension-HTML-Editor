@@ -107,9 +107,11 @@
       note.html = d.html || "";
       embeddedAssetMode = d.assetMode === "inline" ? "inline" : (d.assetMode === "external" ? "external" : "package");
       embeddedBaseHref = d.baseHref || "";
+      const assetHint = $("assetModeHint");       if (assetHint) assetHint.textContent = embeddedAssetMode === "external"         ? "Images are external files next to the HTML (assets/). Insert saves a file there."         : (embeddedAssetMode === "inline" ? "Images are inline data URIs inside the HTML." : "Images stored inside this .lyrnb. Insert adds an <img> at the editor cursor.");
       if (d.title) note.meta.title = d.title;
       if (Array.isArray(d.assets)) { replaceEmbeddedAssets(d.assets); renderAssets(); }
       showCurrentNote();
+      renderAssets();
       autoFormatSource();
       $("saveState").textContent = "已加载";
       $("saveState").className = "save-state";
@@ -1754,6 +1756,48 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     if (!host) return;
     host.innerHTML = "";
     updateAssetRefs();
+    if (EMBEDDED && embeddedAssetMode === "external") {
+      const refs = Array.from(collectAssetReferences()).sort();
+      if (!refs.length) {
+        const empty = document.createElement("div");
+        empty.className = "tab-hint";
+        empty.textContent = "No assets/ references in this HTML. Insert an image to create assets/… next to the file.";
+        host.appendChild(empty);
+        return;
+      }
+      const intro = document.createElement("div");
+      intro.className = "tab-hint";
+      intro.textContent = refs.length + " external asset(s) in the HTML folder:";
+      host.appendChild(intro);
+      for (const ref of refs) {
+        const card = document.createElement("div");
+        card.className = "asset-card";
+        if (embeddedBaseHref) {
+          const img = document.createElement("img");
+          img.src = embeddedBaseHref.replace(/\/$/, "") + "/" + ref;
+          img.alt = ref;
+          img.onerror = () => { img.style.display = "none"; };
+          card.appendChild(img);
+        }
+        const meta = document.createElement("div");
+        meta.className = "asset-meta";
+        meta.innerHTML = "<b>" + escapeHtml(ref.split("/").pop()) + "</b><br>" +
+          '<span class="asset-path">' + escapeHtml(ref) + "</span><br>" +
+          "External file · Used " + assetUsage(ref) + "×";
+        card.appendChild(meta);
+        const actions = document.createElement("div");
+        actions.className = "asset-actions";
+        const copy = document.createElement("button");
+        copy.type = "button"; copy.className = "ghost"; copy.textContent = "Copy path";
+        copy.addEventListener("click", () => {
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ref).catch(() => {});
+        });
+        actions.appendChild(copy);
+        card.appendChild(actions);
+        host.appendChild(card);
+      }
+      return;
+    }
     const assets = Array.from(state.assets.values());
     if (!assets.length) {
       const empty = document.createElement("div");
@@ -2232,6 +2276,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     name.placeholder = "property";
     name.spellcheck = false;
     name.value = prop || "";
+    name.setAttribute("list", "cssPropertyCatalog");
     const colon = document.createElement("span");
     colon.textContent = ":";
     colon.style.display = "none";
@@ -2248,29 +2293,20 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     remove.addEventListener("click", () => { row.remove(); syncCssDeclarationsFromRows(); });
     name.addEventListener("input", syncCssDeclarationsFromRows);
     val.addEventListener("input", syncCssDeclarationsFromRows);
-    attachAutocomplete(name, (typed) => {
-      const q = String(typed || "").trim().toLowerCase();
-      let list = getCssProperties();
-      if (q) list = list.filter((prop) => prop.toLowerCase().includes(q));
-      return list.sort((a, b) => {
-        const as = a.toLowerCase().startsWith(q) ? 0 : 1;
-        const bs = b.toLowerCase().startsWith(q) ? 0 : 1;
-        return as - bs || a.localeCompare(b);
-      });
-    }, (prop) => {
-      name.value = prop;
-      syncCssDeclarationsFromRows();
-      val.focus();
-    }, { enterAcceptsFirst: false, above: true });
-    attachAutocomplete(val, (typed) => {
-      const q = String(typed || "").trim().toLowerCase();
-      let list = getValueSuggestions(name.value);
-      if (q) list = list.filter((value) => value.toLowerCase().includes(q));
-      return list;
-    }, (picked) => {
-      val.value = picked;
-      syncCssDeclarationsFromRows();
-    }, { enterAcceptsFirst: false, above: true });
+    const valueCatalog = document.createElement("datalist");
+    valueCatalog.id = uid("css-value");
+    const refreshValueCatalog = () => {
+      valueCatalog.innerHTML = "";
+      for (const item of getValueSuggestions(name.value)) {
+        const option = document.createElement("option");
+        option.value = item;
+        valueCatalog.appendChild(option);
+      }
+    };
+    val.setAttribute("list", valueCatalog.id);
+    name.addEventListener("input", refreshValueCatalog);
+    refreshValueCatalog();
+    row.appendChild(valueCatalog);
     val.addEventListener("keydown", (event) => {
       if (event.key === "Enter") { event.preventDefault(); appendCssDeclRow("", ""); }
     });
