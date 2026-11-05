@@ -709,7 +709,7 @@
       mode: "lyra-html",
       theme: "lyra",
       lineNumbers: true,
-      lineWrapping: true,
+      lineWrapping: false,
       indentUnit: 2,
       tabSize: 2,
       indentWithTabs: false,

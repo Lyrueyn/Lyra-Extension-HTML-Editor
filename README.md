@@ -97,3 +97,8 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 - 修复嵌入编辑器 assets 变更没有通知父 Notebook，导致新增/替换/删除图片不保存的问题。
 - Reader 嵌入时使用 inline assets：插入图片转 data URL，直接保存在 HTML 里。
 - 增加版本 query，避免 WebView2 缓存旧编辑器脚本。
+
+## 1.4.0
+
+- 源码默认关闭软换行：长 `src`/data URI 不再折到行号下面造成错位；需要时点 Wrap 开启。
+- 修复嵌入模式 assets 新增/替换/删除通知父 Notebook；Reader 使用 inline data URL 保存图片。
