@@ -267,7 +267,13 @@ body.embedded .app { height: 100vh; }
 .cm-s-lyra .cm-ht-style { color: #d4a5ff; }
 .cm-s-lyra .cm-ht-script { color: #ff9aaa; }
 .cm-s-lyra .cm-ht-block { color: #9be7a8; }
-.cm-s-lyra .cm-ht-text { color: #ffd479; }
+  .cm-s-lyra .cm-ht-block.cm-depth-0 { color: #9be7a8; }
+  .cm-s-lyra .cm-ht-block.cm-depth-1 { color: #7ee0ff; }
+  .cm-s-lyra .cm-ht-block.cm-depth-2 { color: #d4a5ff; }
+  .cm-s-lyra .cm-ht-block.cm-depth-3 { color: #ffb86c; }
+  .cm-s-lyra .cm-ht-block.cm-depth-4 { color: #7aa2ff; }
+  .cm-s-lyra .cm-ht-block.cm-depth-5 { color: #f78c6c; }
+.cm-s-lyra .cm-ht-text { color: #ff9aaa; }
 .cm-s-lyra .cm-ht-media { color: #7aa2ff; }
 .cm-s-lyra .cm-ht-other { color: #9fb4c9; }
 

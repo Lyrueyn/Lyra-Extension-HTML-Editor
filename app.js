@@ -795,31 +795,47 @@
     };
   }
   if (window.CodeMirror && !CodeMirror.modes["lyra-html"]) {
+    const VOID_TAGS = new Set(["area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "param", "source", "track", "wbr"]);
     CodeMirror.defineMode("lyra-html", function (config) {
       const base = CodeMirror.getMode(config, "htmlmixed");
-      function tagClass(text) {
-          const normalized = String(text || "").replace(/^<\/?/, "");
-          const match = normalized.match(/^([a-zA-Z][\w:-]*)$/);
-        if (!match) return "";
-        return "ht-" + (TAG_COLOR_LOOKUP[match[1].toLowerCase()] || "other");
-      }
       return {
-        startState: function () { return base.startState(); },
-        copyState: function (state) { return base.copyState(state); },
-        token: function (stream, state) {
-          const style = base.token(stream, state);
-          const text = stream.current();
-          if (style && style.indexOf("tag") >= 0 && /^[a-zA-Z][\w:-]*$/.test(text || "")) {
-            const extra = tagClass(text);
-            if (extra) return extra;
+        startState: function () { return { inner: base.startState(), blockStack: [], pendingOpen: false, pendingClose: false }; },
+        copyState: function (st) { return { inner: base.copyState(st.inner), blockStack: st.blockStack.slice(), pendingOpen: st.pendingOpen, pendingClose: st.pendingClose }; },
+        token: function (stream, st) {
+          const style = base.token(stream, st.inner);
+          const text = stream.current() || "";
+          if (style && style.indexOf("tag") >= 0) {
+            if (text.indexOf("</") >= 0) { st.pendingClose = true; return style; }
+            if (text.indexOf("<") >= 0 && !/^<[a-zA-Z]/.test(text)) { st.pendingOpen = true; return style; }
+            const normalized = text.replace(/^<\/?/, "");
+            const match = normalized.match(/^([a-zA-Z][\w:-]*)/);
+            if (match) {
+              const name = match[1].toLowerCase();
+              const closing = st.pendingClose || text.startsWith("</");
+              const group = TAG_COLOR_LOOKUP[name] || "other";
+              let extra = "ht-" + group;
+              if (group === "block") {
+                if (closing) {
+                  const depth = st.blockStack.length ? st.blockStack.pop() : 0;
+                  extra += " depth-" + depth;
+                } else {
+                  const depth = Math.min(st.blockStack.length, 5);
+                  extra += " depth-" + depth;
+                  if (!VOID_TAGS.has(name)) st.blockStack.push(depth);
+                }
+              }
+              st.pendingOpen = false;
+              st.pendingClose = false;
+              return style + " " + extra;
+            }
           }
           return style;
         },
-        indent: function (state, textAfter, line) {
-          return base.indent ? base.indent(state, textAfter, line) : CodeMirror.Pass;
+        indent: function (st, textAfter, line) {
+          return base.indent ? base.indent(st.inner, textAfter, line) : CodeMirror.Pass;
         },
-        blankLine: function (state) { if (base.blankLine) base.blankLine(state); },
-        innerMode: function (state) { return { state: state, mode: base }; },
+        blankLine: function (st) { if (base.blankLine) base.blankLine(st.inner); },
+        innerMode: function (st) { return { state: st.inner, mode: base }; },
       };
     });
   }
