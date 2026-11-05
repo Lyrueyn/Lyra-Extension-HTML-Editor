@@ -76,3 +76,8 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 
 - Preview 增加 50% / 75% / 100% / 125% / 150% 缩放。
 - Inline style 的颜色属性增加系统取色器，取色立即写回源码。
+
+## 1.2.0
+
+- CSS 标签页新增 Style blocks：可直接在右栏编辑每个 `<style>` 块的内容，Apply 写回源码，支持 Format CSS、删除块、新增块。
+- 工具栏新增 Wrap 开关：长 data URI 太多时可关闭软换行，改横向滚动。

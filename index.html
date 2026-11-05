@@ -34,6 +34,7 @@
         <div class="source-actions">
           <span id="sourcePos" class="pane-meta">Ln 1</span>
           <button id="formatBtn" class="ghost" type="button" title="Format HTML (Shift+Alt+F)">Format</button>
+          <button id="wrapBtn" class="ghost active" type="button" title="Toggle source soft wrap">Wrap</button>
           <button id="imageBtn" class="ghost" type="button" title="Insert image file">Image</button>
         </div>
       </div>
@@ -136,6 +137,12 @@
           <div class="action-row">
             <button id="applyCssRuleBtn" class="ghost" type="button">Apply rule</button>
             <button id="deleteCssRuleBtn" class="ghost danger-text" type="button">Delete rule</button>
+          </div>
+          <div class="inspector-group">
+            <h3>Style blocks</h3>
+            <div class="tab-hint">Edit the content inside &lt;style&gt; directly. Apply writes back into the HTML source.</div>
+            <div id="styleBlockList" class="style-block-list"></div>
+            <div class="action-row"><button id="addStyleBlockBtn" class="ghost" type="button">＋ style block</button></div>
           </div>
           <div class="inspector-group">
             <h3>Managed rules</h3>

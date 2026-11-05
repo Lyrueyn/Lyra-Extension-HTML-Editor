@@ -1391,6 +1391,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
       renderAssets();
     } else if (name === "css") {
       renderCssRules();
+      renderStyleBlocks();
     }
   }
   function markDomSelection() {
@@ -1762,6 +1763,112 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
       declarations: $("cssDeclarations").value,
     };
   }
+  function getStyleBlocks(source) {
+    const text = String(source || "");
+    const blocks = [];
+    const re = /<style\b([^>]*)>([\s\S]*?)<\/style>/gi;
+    let match;
+    while ((match = re.exec(text))) {
+      const open = match[0].slice(0, match[0].indexOf(">") + 1);
+      const start = match.index;
+      const end = start + match[0].length;
+      blocks.push({
+        start: start,
+        end: end,
+        contentStart: start + open.length,
+        contentEnd: end - "</style>".length,
+        attrs: (match[1] || "").trim(),
+        css: match[2] || "",
+      });
+    }
+    return blocks;
+  }
+  function renderStyleBlocks() {
+    const host = $("styleBlockList");
+    if (!host) return;
+    host.innerHTML = "";
+    const blocks = getStyleBlocks(getSource());
+    if (!blocks.length) {
+      const empty = document.createElement("div");
+      empty.className = "tab-hint";
+      empty.textContent = "No <style> block in this document. Click ＋ style block to add one.";
+      host.appendChild(empty);
+      return;
+    }
+    blocks.forEach((block, index) => {
+      const card = document.createElement("div");
+      card.className = "style-block-card";
+      const head = document.createElement("div");
+      head.className = "style-block-head";
+      const title = document.createElement("span");
+      title.textContent = "style #" + (index + 1);
+      const attrs = document.createElement("span");
+      attrs.className = "muted";
+      attrs.textContent = block.attrs || "no attributes";
+      head.appendChild(title);
+      head.appendChild(attrs);
+      const editor = document.createElement("textarea");
+      editor.className = "style-block-editor";
+      editor.spellcheck = false;
+      editor.value = block.css.replace(/^\n+/, "").replace(/\s+$/, "");
+      const actions = document.createElement("div");
+      actions.className = "style-block-actions";
+      const apply = document.createElement("button");
+      apply.type = "button";
+      apply.className = "ghost";
+      apply.textContent = "Apply";
+      const format = document.createElement("button");
+      format.type = "button";
+      format.className = "ghost";
+      format.textContent = "Format CSS";
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "ghost danger-text";
+      remove.textContent = "Delete block";
+      apply.addEventListener("click", () => {
+        const source = getSource();
+        const fresh = getStyleBlocks(source);
+        const target = fresh[index] || fresh[0];
+        if (!target) return;
+        const next = source.slice(0, target.contentStart) + "\n" + editor.value.replace(/\r\n/g, "\n") + "\n" + source.slice(target.contentEnd);
+        applySourceEdit(next);
+        renderStyleBlocks();
+      });
+      format.addEventListener("click", () => {
+        if (typeof window.css_beautify === "function") {
+          editor.value = window.css_beautify(editor.value, { indent_size: 2, end_with_newline: false });
+        }
+      });
+      remove.addEventListener("click", () => {
+        if (!confirm("删除这个 <style> 块？")) return;
+        const source = getSource();
+        const fresh = getStyleBlocks(source);
+        const target = fresh[index] || fresh[0];
+        if (!target) return;
+        const next = source.slice(0, target.start) + source.slice(target.end);
+        applySourceEdit(next);
+        renderStyleBlocks();
+      });
+      actions.appendChild(apply);
+      actions.appendChild(format);
+      actions.appendChild(remove);
+      card.appendChild(head);
+      card.appendChild(editor);
+      card.appendChild(actions);
+      host.appendChild(card);
+    });
+  }
+  function addStyleBlock() {
+    const source = getSource();
+    const template = "<style>\n\n</style>";
+    let next;
+    if (/<\/head>/i.test(source)) next = source.replace(/<\/head>/i, template + "\n</head>");
+    else if (/<\/body>/i.test(source)) next = source.replace(/<\/body>/i, template + "\n</body>");
+    else next = source + "\n" + template;
+    applySourceEdit(next);
+    if (state.activeTab === "css") renderStyleBlocks();
+  }
+
   function renderCssRules() {
     const host = $("cssRuleList");
     if (!host) return;
@@ -2304,6 +2411,13 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
   function bind() {
     initSourceEditor();
     $("formatBtn").addEventListener("click", formatSource);
+    $("wrapBtn").addEventListener("click", () => {
+      const cm = state.mirror;
+      if (!cm) return;
+      const on = !cm.getOption("lineWrapping");
+      cm.setOption("lineWrapping", on);
+      $("wrapBtn").classList.toggle("active", on);
+    });
     $("imageBtn").addEventListener("click", () => $("imageInput").click());
     $("imageInput").addEventListener("change", async (e) => {
       const file = e.target.files && e.target.files[0];
@@ -2335,6 +2449,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
       addInlineProperty(prop);
     });
     $("applyCssRuleBtn").addEventListener("click", applyCssRule);
+      $("addStyleBlockBtn").addEventListener("click", addStyleBlock);
     $("deleteCssRuleBtn").addEventListener("click", deleteCssRule);
     $("cssSelector").addEventListener("change", loadCssRuleForDraft);
     $("cssState").addEventListener("change", loadCssRuleForDraft);
