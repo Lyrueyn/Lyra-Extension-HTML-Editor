@@ -850,7 +850,8 @@
     if (typeof window.css_beautify !== "function") return html;
     return html.replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style>)/gi, (match, open, css, close, offset) => {
       try {
-        const formatted = window.css_beautify(css, { indent_size: 2, end_with_newline: false });
+        const normalizedCss = String(css || "").replace(/\s*,\s*/g, ", ");
+        const formatted = window.css_beautify(normalizedCss, { indent_size: 2, end_with_newline: false, selector_separator_newline: false, preserve_newlines: false });
         const before = html.slice(0, offset);
         const indent = (before.match(/(?:^|\n)([ \t]*)$/) || ["", ""])[1];
         const body = formatted.split("\n").map((line) => line ? indent + "  " + line : "").join("\n");

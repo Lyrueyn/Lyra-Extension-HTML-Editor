@@ -157,3 +157,8 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 - CSS 值补全只在输入时展开，点击/聚焦不再立刻弹大列表。
 - 值补全固定向下展开，不再出现向上弹出的“上拉框”。
 - 属性搜索域仍保持和 Style 一致的深色补全。
+
+## 1.14.0
+
+- 多 selector 规则（.a, .b）作为一个下拉项显示，标签归一化为单行；选中后编辑属性，Apply 保留逗号列表，不会拆成单 selector。
+- CSS 格式化不再把 `.a, .b` 拆成多行：selector_separator_newline=false + 逗号空白归一化。
