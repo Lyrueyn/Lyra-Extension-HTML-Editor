@@ -325,3 +325,11 @@ body.embedded .app { height: 100vh; }
 .css-panel .css-rule-select { width: 100%; }
 .css-panel .css-actions { grid-template-columns: 1fr auto; }
 .css-panel .css-actions .ghost { justify-self: start; width: auto; }
+
+.css-selector-chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 2px 0 6px; }
+.css-selector-chip { display: inline-flex; align-items: center; gap: 3px; background: #0b1118; border: 1px solid #345066; border-radius: 5px; padding: 2px 4px 2px 6px; color: #8fd6ff; font: 10px Consolas, "Microsoft YaHei", monospace; }
+.css-selector-chip button { width: 14px; height: 14px; padding: 0; border: 0; background: transparent; color: #ff9aaa; cursor: pointer; font-size: 12px; line-height: 12px; }
+.css-selector-chip button:hover { color: #fff; background: #5a2a34; border-radius: 3px; }
+
+.css-panel .css-actions { display: block; margin: 6px 0 8px; }
+.css-panel .css-actions button { width: 100%; }

@@ -17,6 +17,7 @@
     let pendingAssetRequest = null;
   let cssRuleTarget = null;
   let cssRuleFilter = "";
+  let cssDraftSelectors = [];
 
   const state = {
     manifest: null,
@@ -2040,6 +2041,60 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     });
     return { blocks: blocks, rules: rules };
   }
+  function renderCssSelectorChips() {
+    const host = $("cssSelectorChips");
+    if (!host) return;
+    host.innerHTML = "";
+    if (cssDraftSelectors.length < 2) {
+      if (cssDraftSelectors.length === 1) {
+        const hint = document.createElement("span");
+        hint.className = "tab-hint";
+        hint.style.margin = "0";
+        hint.textContent = "Select another selector to combine into one CSS rule.";
+        host.appendChild(hint);
+      }
+      return;
+    }
+    cssDraftSelectors.forEach((selector) => {
+      const chip = document.createElement("span");
+      chip.className = "css-selector-chip";
+      const text = document.createElement("span");
+      text.textContent = selector;
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.textContent = "×";
+      remove.title = "Remove this selector";
+      remove.addEventListener("click", () => {
+        cssDraftSelectors = cssDraftSelectors.filter((item) => item !== selector);
+        $("cssSelector").value = cssDraftSelectors.join(", ");
+        renderCssSelectorChips();
+      });
+      chip.appendChild(text);
+      chip.appendChild(remove);
+      host.appendChild(chip);
+    });
+  }
+  function setCssDraftSelectors(list) {
+    cssDraftSelectors = [];
+    (list || []).forEach((selector) => {
+      const value = String(selector || "").trim();
+      if (value && !cssDraftSelectors.includes(value)) cssDraftSelectors.push(value);
+    });
+    $("cssSelector").value = cssDraftSelectors.join(", ");
+    renderCssSelectorChips();
+  }
+  function addCssDraftSelector(selector) {
+    const value = String(selector || "").trim();
+    if (!value || cssDraftSelectors.includes(value)) return;
+    const first = cssDraftSelectors.length === 0;
+    cssDraftSelectors.push(value);
+    $("cssSelector").value = cssDraftSelectors.join(", ");
+    if (first && !cssRuleTarget) {
+      $("cssDeclarations").value = "";
+      renderCssDeclRows("");
+    }
+    renderCssSelectorChips();
+  }
   function loadCssRuleTarget(blockIndex, ruleIndex) {
     const all = collectCssRuleTargets();
     const target = all.rules.find((r) => r.blockIndex === blockIndex && r.ruleIndex === ruleIndex);
@@ -2062,11 +2117,8 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
   function loadDraftSelector(selector) {
     const existing = findRuleForSelector(selector);
     if (existing) { loadCssRuleTarget(existing.blockIndex, existing.ruleIndex); return; }
-    cssRuleTarget = null;
-    $("cssSelector").value = selector;
-    $("cssState").value = "";
-    $("cssDeclarations").value = "";
-    renderCssDeclRows("");
+    addCssDraftSelector(selector);
+    $("cssSelector").value = cssDraftSelectors.join(", ");
     $("cssRuleSelect").value = "sel:" + encodeURIComponent(selector);
   }
   const DEFAULT_HTML_TAGS = ["html", "head", "body", "title", "meta", "link", "style", "script", "main", "header", "footer", "nav", "section", "article", "aside", "div", "span", "p", "a", "img", "picture", "source", "video", "audio", "canvas", "svg", "ul", "ol", "li", "dl", "dt", "dd", "h1", "h2", "h3", "h4", "h5", "h6", "blockquote", "pre", "code", "hr", "br", "strong", "em", "b", "i", "u", "small", "sub", "sup", "mark", "figure", "figcaption", "table", "caption", "thead", "tbody", "tfoot", "tr", "th", "td", "form", "label", "input", "textarea", "select", "option", "button", "fieldset", "legend", "details", "summary", "dialog", "template", "iframe"];

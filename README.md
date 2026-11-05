@@ -162,3 +162,9 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 
 - 多 selector 规则（.a, .b）作为一个下拉项显示，标签归一化为单行；选中后编辑属性，Apply 保留逗号列表，不会拆成单 selector。
 - CSS 格式化不再把 `.a, .b` 拆成多行：selector_separator_newline=false + 逗号空白归一化。
+
+## 1.15.0
+
+- 右栏可直接组合多个 class/tag 创建共享 CSS：从 selector 下拉依次选择 .card、.title，形成 chips；编辑属性后 Apply 生成 `.card, .title { ... }`。
+- 已有规则选中后 chips 显示其 selector 列表；继续加 selector 可扩展该规则。
+- Apply 移到面板顶部，避免补全弹层遮挡。
