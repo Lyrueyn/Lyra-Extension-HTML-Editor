@@ -168,3 +168,9 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 - 右栏可直接组合多个 class/tag 创建共享 CSS：从 selector 下拉依次选择 .card、.title，形成 chips；编辑属性后 Apply 生成 `.card, .title { ... }`。
 - 已有规则选中后 chips 显示其 selector 列表；继续加 selector 可扩展该规则。
 - Apply 移到面板顶部，避免补全弹层遮挡。
+
+## 1.16.0
+
+- 编辑预览不再强制注入 body 字体/边距/颜色等基础样式，只保留 img/video/canvas/svg 的 max-width:100% 约束。
+- Reader 阅读模式也注入同一 image 约束，读/编辑图片尺寸一致。
+- 用户 HTML 的 body width/padding/font 在两种模式都按原样生效。

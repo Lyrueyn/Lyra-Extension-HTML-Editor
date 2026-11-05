@@ -1367,18 +1367,7 @@
   }
 
   const BASE_CSS = `
-html, body { min-height: 100%; }
-body {
-  margin: 0; padding: 24px; background: #ffffff; color: #1f2937;
-  font: 16px/1.75 -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
-}
-img { max-width: 100%; min-width: 0; height: auto; }
-table { border-collapse: collapse; }
-td, th { border: 1px solid #d8dee8; padding: 6px 8px; }
-a { color: #1d8fc0; }
-blockquote { margin: 12px 0; padding: 4px 14px; border-left: 3px solid #66ccff; background: #f4f9fc; color: #53657a; }
-pre { background: #f4f6f9; border: 1px solid #e4e9f0; border-radius: 6px; padding: 12px; overflow: auto; }
-code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; padding: 1px 4px; border-radius: 4px; }
+img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
 `;
 
   function injectPreview(sourceAnnotated, isDoc) {
