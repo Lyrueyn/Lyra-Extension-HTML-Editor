@@ -848,6 +848,45 @@
     }
     return lines.join("\n");
   }
+  function normalizeOpeningTags(html) {
+    const lines = html.split("\n");
+    const out = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmed = line.trim();
+      if (!/^<[a-zA-Z][\w:-]*$/.test(trimmed)) {
+        out.push(line);
+        continue;
+      }
+      const base = (line.match(/^[ \t]*/) || [""])[0];
+      out.push(line);
+      let style = false;
+      let j = i + 1;
+      for (; j < lines.length; j++) {
+        const t = lines[j].trim();
+        if (t === "") continue;
+        if (t === ">" || t === "/>" || t.startsWith(">")) {
+          out.push(base + t);
+          j++;
+          break;
+        }
+        if (style) {
+          out.push(base + "    " + t);
+          if (t.endsWith(">")) { j++; break; }
+          continue;
+        }
+        const attr = t.match(/^([^\s=]+)\s*=/);
+        if (attr) {
+          out.push(base + "  " + t);
+          if (attr[1] === "style" && !t.endsWith('"') && !t.endsWith("'")) style = true;
+          continue;
+        }
+        break;
+      }
+      i = j - 1;
+    }
+    return out.join("\n");
+  }
   function breakBeforeBlockTags(html) {
     return html.replace(/([^\n])\s*(?=<(?:address|article|aside|blockquote|body|div|dl|fieldset|figcaption|figure|footer|form|h[1-6]|head|header|hr|html|img|li|link|main|meta|nav|ol|p|pre|script|section|style|table|tbody|td|tfoot|th|thead|title|tr|ul)\b)/gi, "$1\n");
   }
@@ -869,6 +908,7 @@
     formatted = formatStyleAttributes(formatted);
     formatted = formatStyleTags(formatted);
     formatted = fixOpeningTagIndent(formatted);
+    formatted = normalizeOpeningTags(formatted);
     setSourceValue(formatted, false);
     const note = currentNote();
     if (note) note.html = formatted;
