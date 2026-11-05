@@ -151,3 +151,9 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 - 移除原生 datalist 白底弹层。
 - 属性搜索选中后添加一行，值输入用同一套深色补全；Apply 写回 selector 的 CSS 规则。
 - Assets 标签在 external 模式显示 assets/ 引用卡片；package 模式显示 .lyrnb 内资产。
+
+## 1.13.0
+
+- CSS 值补全只在输入时展开，点击/聚焦不再立刻弹大列表。
+- 值补全固定向下展开，不再出现向上弹出的“上拉框”。
+- 属性搜索域仍保持和 Style 一致的深色补全。

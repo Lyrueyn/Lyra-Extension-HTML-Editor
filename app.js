@@ -2286,7 +2286,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     }, (picked) => {
       input.value = picked;
       syncCssDeclarationsFromRows();
-    }, { enterAcceptsFirst: false, above: true });
+    }, { enterAcceptsFirst: false, showOnFocus: false, forceBelow: true });
     input.addEventListener("input", syncCssDeclarationsFromRows);
     const remove = document.createElement("button");
     remove.type = "button";
