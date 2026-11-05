@@ -261,3 +261,12 @@ select:disabled, input:disabled, button:disabled { opacity: .45; cursor: default
 body.embedded .top { display: none !important; }
 body.embedded .workspace { flex: 1 1 auto; min-height: 0; }
 body.embedded .app { height: 100vh; }
+
+/* Tag category colors (CodeMirror overlay) */
+.cm-s-lyra .cm-ht-doc { color: #7ee0ff; }
+.cm-s-lyra .cm-ht-style { color: #d4a5ff; }
+.cm-s-lyra .cm-ht-script { color: #ff9aaa; }
+.cm-s-lyra .cm-ht-block { color: #9be7a8; }
+.cm-s-lyra .cm-ht-text { color: #ffd479; }
+.cm-s-lyra .cm-ht-media { color: #7aa2ff; }
+.cm-s-lyra .cm-ht-other { color: #9fb4c9; }

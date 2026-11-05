@@ -626,11 +626,67 @@
     if (!hint) hint = CodeMirror.hint.html || CodeMirror.hint.xml;
     cm.showHint({ hint: hint, completeSingle: false });
   }
+  const TAG_COLOR_GROUPS = {
+    doc: ["html", "head", "body", "meta", "title", "link", "base"],
+    style: ["style"],
+    script: ["script", "noscript"],
+    block: ["div", "section", "article", "header", "footer", "main", "aside", "nav", "figure", "figcaption", "details", "summary"],
+    text: ["p", "h1", "h2", "h3", "h4", "h5", "h6", "span", "strong", "em", "b", "i", "u", "s", "a", "code", "pre", "blockquote", "ul", "ol", "li", "dl", "dt", "dd", "table", "thead", "tbody", "tfoot", "tr", "th", "td", "form", "label", "input", "button", "select", "option", "textarea", "hr", "br"],
+    media: ["img", "video", "audio", "canvas", "svg", "picture", "source", "iframe"],
+  };
+  const TAG_COLOR_LOOKUP = (() => {
+    const map = {};
+    for (const [group, names] of Object.entries(TAG_COLOR_GROUPS)) for (const name of names) map[name] = group;
+    return map;
+  })();
+  function tagColorOverlay() {
+    return {
+      token(stream) {
+        if (stream.match(/^<\/?[a-zA-Z][\w:-]*/)) {
+          const raw = stream.current();
+          const name = raw.replace(/^<\/?/, "").toLowerCase();
+          return "ht-" + (TAG_COLOR_LOOKUP[name] || "other");
+        }
+        stream.next();
+        return null;
+      },
+    };
+  }
+  if (window.CodeMirror && !CodeMirror.modes["lyra-html"]) {
+    CodeMirror.defineMode("lyra-html", function (config) {
+      const base = CodeMirror.getMode(config, "htmlmixed");
+      function tagClass(text) {
+          const normalized = String(text || "").replace(/^<\/?/, "");
+          const match = normalized.match(/^([a-zA-Z][\w:-]*)$/);
+        if (!match) return "";
+        return "ht-" + (TAG_COLOR_LOOKUP[match[1].toLowerCase()] || "other");
+      }
+      return {
+        startState: function () { return base.startState(); },
+        copyState: function (state) { return base.copyState(state); },
+        token: function (stream, state) {
+          const style = base.token(stream, state);
+          const text = stream.current();
+          if (style && style.indexOf("tag") >= 0 && /^[a-zA-Z][\w:-]*$/.test(text || "")) {
+            const extra = tagClass(text);
+            if (extra) return extra;
+          }
+          return style;
+        },
+        indent: function (state, textAfter, line) {
+          return base.indent ? base.indent(state, textAfter, line) : CodeMirror.Pass;
+        },
+        blankLine: function (state) { if (base.blankLine) base.blankLine(state); },
+        innerMode: function (state) { return { state: state, mode: base }; },
+      };
+    });
+  }
+
   function initSourceEditor() {
     if (state.mirror || !window.CodeMirror) return;
     const cm = CodeMirror($("sourceEditor"), {
       value: "",
-      mode: "htmlmixed",
+      mode: "lyra-html",
       theme: "lyra",
       lineNumbers: true,
       lineWrapping: true,
@@ -730,10 +786,13 @@
   }
   function formatStyleTags(html) {
     if (typeof window.css_beautify !== "function") return html;
-    return html.replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style>)/gi, (match, open, css, close) => {
+    return html.replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style>)/gi, (match, open, css, close, offset) => {
       try {
         const formatted = window.css_beautify(css, { indent_size: 2, end_with_newline: false });
-        return open + "\n" + formatted + "\n" + close;
+        const before = html.slice(0, offset);
+        const indent = (before.match(/(?:^|\n)([ \t]*)$/) || ["", ""])[1];
+        const body = formatted.split("\n").map((line) => line ? indent + "  " + line : "").join("\n");
+        return open + "\n" + body + "\n" + indent + close;
       } catch { return match; }
     });
   }
@@ -771,11 +830,14 @@
     }
     return lines.join("\n");
   }
+  function breakBeforeBlockTags(html) {
+    return html.replace(/([^\n])\s*(?=<(?:address|article|aside|blockquote|body|div|dl|fieldset|figcaption|figure|footer|form|h[1-6]|head|header|hr|html|img|li|link|main|meta|nav|ol|p|pre|script|section|style|table|tbody|td|tfoot|th|thead|title|tr|ul)\b)/gi, "$1\n");
+  }
   function formatSource() {
     if (typeof window.html_beautify !== "function") return;
     const source = getSource();
     if (!source.trim()) return;
-    let formatted = window.html_beautify(source, {
+    let formatted = window.html_beautify(breakBeforeBlockTags(source), {
       indent_size: 2,
       preserve_newlines: true,
       max_preserve_newlines: 2,
@@ -783,6 +845,7 @@
       wrap_attributes: "force-expand-multiline",
       wrap_attributes_indent_size: 2,
       wrap_attributes_min_attrs: 2,
+    inline: ["a", "abbr", "b", "bdi", "bdo", "br", "cite", "code", "dfn", "em", "i", "kbd", "mark", "q", "s", "samp", "small", "span", "strong", "sub", "sup", "time", "u", "var"],
       end_with_newline: true,
     });
     formatted = formatStyleAttributes(formatted);
@@ -800,8 +863,28 @@
 
   // ---------- 默认内容 ----------
   function defaultHtml() {
-    return `<h1>新笔记</h1>
-<p>左边写 HTML，中间实时预览，右边检查元素并调整样式。</p>
+    return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>新笔记</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+      color: #1f2937;
+      background: #ffffff;
+      line-height: 1.65;
+    }
+    img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
+  </style>
+</head>
+<body>
+  <h1>新笔记</h1>
+  <p>左边写 HTML，中间实时预览，右边检查元素并调整样式。</p>
+</body>
+</html>
 `;
   }
   function defaultNote(title) {

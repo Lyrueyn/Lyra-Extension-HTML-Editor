@@ -64,3 +64,10 @@ https://lyra-extensions.local/html-editor/index.html?embedded=1
 ## 许可证
 
 GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
+
+## 1.0.1
+
+- Format 先按块级标签断行：`img` 等标签不再粘在上一行。
+- 多行属性统一缩进（标签 +2），`style` 内声明再 +2；`>` 回到标签列。
+- `<style>` 内 CSS 自动换行/缩进。
+- 按标签类别分色：文档结构（html/head/body）、style、block（div/section）、文本（h1/p/span）、媒体（img/video）、script。
