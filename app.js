@@ -1561,6 +1561,12 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
   function updateAssetRefs() {
     const host = $("assetRefs");
     if (!host) return;
+    if (EMBEDDED && embeddedAssetMode !== "package") {
+      host.textContent = embeddedAssetMode === "external"
+        ? "External assets live next to the HTML file (assets/ folder)."
+        : "Inline assets: images are embedded in the HTML.";
+      return;
+    }
     const refs = collectAssetReferences();
     const existing = new Set(Array.from(state.assets.values()).map((a) => a.path));
     const missing = Array.from(refs).filter((r) => !existing.has(r));

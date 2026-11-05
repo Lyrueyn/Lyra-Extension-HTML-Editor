@@ -287,3 +287,6 @@ body.embedded .app { height: 100vh; }
 
 body.inline-assets .dev-tab[data-tab="assets"],
 body.inline-assets #tabAssets { display: none !important; }
+
+body.external-assets .dev-tab[data-tab="assets"],
+body.external-assets #tabAssets { display: none !important; }
