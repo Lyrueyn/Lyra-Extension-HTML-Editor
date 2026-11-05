@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="vendor/codemirror/codemirror.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/hint/show-hint.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/fold/foldgutter.min.css"/>
-  <link rel="stylesheet" href="style.css?v=170"/>
+  <link rel="stylesheet" href="style.css?v=180"/>
 </head>
 <body>
 <div class="app">
@@ -121,37 +121,41 @@
         </section>
         </div>
         <div id="tabCss" class="tab-content" hidden>
-          <div class="tab-hint">Manage a &lt;style data-lyra-devtool&gt; block. Rules are saved inside the HTML source.</div>
-          <div class="style-field"><span>rule</span><select id="cssRuleSelect" class="css-rule-select"><option value="">Select existing CSS rule…</option></select></div>
-          <div class="style-field"><span>selector</span><input id="cssSelector" type="text" spellcheck="false" placeholder=".card"/></div>
-          <div class="style-field"><span>state</span><select id="cssState">
-            <option value="">base</option>
-            <option value=":hover">:hover</option>
-            <option value=":focus">:focus</option>
-            <option value=":focus-visible">:focus-visible</option>
-            <option value=":active">:active</option>
-            <option value="::before">::before</option>
-            <option value="::after">::after</option>
-          </select></div>
-          <div class="css-editor-label">declarations</div>
-          <div id="cssDeclRows" class="css-decl-rows"></div>
-          <div class="action-row"><button id="addCssDeclBtn" class="ghost" type="button">＋ property</button><button id="applyCssDeclsBtn" class="ghost" type="button">Apply declarations</button></div>
-          <textarea id="cssDeclarations" class="css-declarations" spellcheck="false" style="display:none"></textarea>
-          <datalist id="cssPropertyCatalog"></datalist>
-          <div class="action-row">
-            <button id="applyCssRuleBtn" class="ghost" type="button">Apply rule</button>
-            <button id="deleteCssRuleBtn" class="ghost danger-text" type="button">Delete rule</button>
-          </div>
-          <div class="inspector-group">
-            <h3>Style blocks</h3>
-            <div class="tab-hint">Edit the content inside &lt;style&gt; directly. Apply writes back into the HTML source.</div>
-            <div id="styleBlockList" class="style-block-list"></div>
-            <div class="action-row"><button id="addStyleBlockBtn" class="ghost" type="button">＋ style block</button></div>
-          </div>
-          <div class="inspector-group">
-            <h3>Managed rules</h3>
+          <section class="css-section">
+            <div class="css-section-head">
+              <h3>CSS rules</h3>
+              <span id="cssRuleCount" class="pane-meta">0 rules</span>
+            </div>
+            <div class="css-rule-toolbar">
+              <input id="cssRuleSearch" class="css-rule-search" type="text" placeholder="Filter selectors…" spellcheck="false"/>
+              <button id="newCssRuleBtn" class="ghost" type="button">＋ New rule</button>
+            </div>
             <div id="cssRuleList" class="css-rule-list"></div>
-          </div>
+            <select id="cssRuleSelect" style="display:none"><option value=""></option></select>
+          </section>
+          <section class="css-section">
+            <div class="css-section-head">
+              <h3>Selected rule</h3>
+              <span id="cssRuleBadge" class="pane-meta">New rule</span>
+            </div>
+            <div class="style-field"><span>selector</span><input id="cssSelector" type="text" spellcheck="false" placeholder=".card / .card:hover"/></div>
+            <div class="css-editor-label">declarations</div>
+            <div id="cssDeclRows" class="css-decl-rows"></div>
+            <div class="css-actions">
+              <button id="addCssDeclBtn" class="ghost" type="button">＋ property</button>
+              <button id="applyCssRuleBtn" class="primary" type="button">Apply</button>
+              <button id="deleteCssRuleBtn" class="ghost danger-text" type="button">Delete rule</button>
+              <button id="applyCssDeclsBtn" class="ghost" type="button" hidden>Apply declarations</button>
+            </div>
+            <select id="cssState" style="display:none"><option value="">base</option></select>
+            <textarea id="cssDeclarations" class="css-declarations" spellcheck="false" style="display:none"></textarea>
+            <datalist id="cssPropertyCatalog"></datalist>
+          </section>
+          <details class="css-advanced">
+            <summary>Advanced: edit &lt;style&gt; blocks directly</summary>
+            <div class="style-block-list" id="styleBlockList"></div>
+            <div class="action-row"><button id="addStyleBlockBtn" class="ghost" type="button">＋ style block</button></div>
+          </details>
         </div>
         <div id="tabDom" class="tab-content" hidden>
           <div class="tab-hint">Click a node to select it in the preview and jump to its source line.</div>
@@ -209,6 +213,6 @@
 <script src="vendor/codemirror/addon/fold/foldcode.min.js"></script>
 <script src="vendor/codemirror/addon/fold/foldgutter.min.js"></script>
 <script src="vendor/codemirror/addon/selection/active-line.min.js"></script>
-<script src="app.js?v=170"></script>
+<script src="app.js?v=180"></script>
 </body>
 </html>

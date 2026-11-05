@@ -301,3 +301,26 @@ body.external-assets #tabAssets { display: none !important; }
 .css-decl-row input:focus { border-color: var(--accent); }
 .css-decl-row .css-decl-value { color: #ffd479; }
 .css-decl-row .css-decl-remove { background: transparent; color: #d89a9a; border: 1px solid var(--line); border-radius: 4px; cursor: pointer; height: 22px; padding: 0; }
+
+.css-section { border-bottom: 1px solid var(--line); padding: 0 0 12px; margin: 0 0 12px; }
+.css-section:last-of-type { border-bottom: 0; }
+.css-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+.css-section-head h3 { margin: 0; font-size: 11px; letter-spacing: .04em; color: #dce8f6; }
+.css-rule-toolbar { display: grid; grid-template-columns: 1fr auto; gap: 6px; margin-bottom: 8px; }
+.css-rule-search { min-width: 0; background: #0b1118; color: var(--text); border: 1px solid var(--line); border-radius: 5px; padding: 6px 7px; font: 10px Consolas, "Microsoft YaHei", monospace; outline: none; }
+.css-rule-search:focus { border-color: var(--accent); }
+.css-rule-list { display: flex; flex-direction: column; gap: 4px; max-height: 220px; overflow: auto; }
+.css-rule-item { display: flex; flex-direction: column; align-items: stretch; gap: 3px; text-align: left; background: #0b1118; color: var(--text); border: 1px solid var(--line); border-radius: 5px; padding: 6px 7px; cursor: pointer; }
+.css-rule-item:hover { border-color: #2f5168; }
+.css-rule-item.active { border-color: var(--accent); background: rgba(102,204,255,.08); }
+.css-rule-name { color: #7ec8f2; font: 11px Consolas, "Microsoft YaHei", monospace; }
+.css-rule-meta { color: #7892ad; font: 9px Consolas, "Microsoft YaHei", monospace; }
+.css-advanced { margin-top: 6px; }
+.css-advanced summary { cursor: pointer; color: #8fa3bc; font-size: 10px; padding: 4px 0; }
+.css-advanced summary:hover { color: var(--text); }
+.css-decl-row { grid-template-columns: minmax(100px, 1fr) minmax(110px, 1.2fr) 24px; }
+.css-decl-row .css-decl-prop { color: #8fd6ff; }
+
+.css-actions { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: center; margin-top: 8px; }
+.css-actions button { width: 100%; padding: 6px 8px; font-size: 11px; }
+.css-actions .primary { font-weight: 650; }

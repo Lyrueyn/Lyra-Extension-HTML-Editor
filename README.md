@@ -120,3 +120,8 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 ## 1.7.0
 
 - CSS 标签页改为逐条属性行编辑：选中规则后每个 declaration 显示为 property + value 输入行，可增删属性；Apply 写回对应 style 规则，和 Style 标签页的逐项编辑一致。
+
+## 1.8.0
+
+- CSS 标签页完全重做：规则列表+筛选、选中规则、逐条属性行、property/value 补全（自定义 autocomplete）、新增/删除规则；布局与 Style 标签页统一。
+- 自动补全弹层在下方空间不足或属性行时向上展开，避免挡住 Apply。

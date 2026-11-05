@@ -16,6 +16,7 @@
     let embeddedBaseHref = "";
     let pendingAssetRequest = null;
   let cssRuleTarget = null;
+  let cssRuleFilter = "";
 
   const state = {
     manifest: null,
@@ -450,6 +451,17 @@
     const items = getItems(input.value || "");
     return items.slice(0, 80);
   }
+  if (!window.__lyraAutocompleteOutsideBound) {
+    window.__lyraAutocompleteOutsideBound = true;
+    document.addEventListener("pointerdown", (event) => {
+      const popup = $("autocompletePopup");
+      if (!popup || popup.hidden) return;
+      const target = event.target;
+      if (popup.contains(target)) return;
+      if (target && target.closest && target.closest("input, textarea, select")) return;
+      popup.hidden = true;
+    }, true);
+  }
   function attachAutocomplete(input, getItems, onPick, options) {
     let active = -1;
     let items = [];
@@ -476,9 +488,12 @@
       });
       const rect = input.getBoundingClientRect();
       popup.style.left = Math.round(rect.left) + "px";
-      popup.style.top = Math.round(rect.bottom + 2) + "px";
       popup.style.width = Math.max(180, Math.round(rect.width)) + "px";
       popup.hidden = false;
+      const popupHeight = popup.getBoundingClientRect().height;
+      let popupTop = rect.bottom + 2;
+      if ((options && options.above) || popupTop + popupHeight > window.innerHeight - 8) popupTop = Math.max(4, rect.top - popupHeight - 2);
+      popup.style.top = Math.round(popupTop) + "px";
       const current = popup.children[active];
       if (current) current.scrollIntoView({ block: "nearest" });
     };
@@ -1990,6 +2005,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     $("cssState").value = "";
     $("cssDeclarations").value = target.declarations;
     renderCssDeclRows(target.declarations);
+    setCssRuleBadge("style #" + (blockIndex + 1) + " · rule " + (ruleIndex + 1));
     $("cssRuleSelect").value = blockIndex + ":" + ruleIndex;
     document.querySelectorAll(".css-rule-item").forEach((el) => {
       el.classList.toggle("active", el.dataset.block === String(blockIndex) && el.dataset.rule === String(ruleIndex));
@@ -2029,9 +2045,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     css = css.slice(0, fresh.selectorStart) + draft.selector + css.slice(fresh.selectorEnd);
     const next = source.slice(0, block.contentStart) + css + source.slice(block.contentEnd);
     applySourceEdit(next);
-    cssRuleTarget = null;
-    $("cssDeclarations").value = "";
-    renderCssDeclRows("");
+    setCssRuleBadge("Saved");
     renderStyleBlocks();
     renderCssRules();
     return true;
@@ -2051,6 +2065,8 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     }
     cssRuleTarget = null;
     $("cssDeclarations").value = "";
+    renderCssDeclRows("");
+    setCssRuleBadge("New rule");
     renderStyleBlocks();
     renderCssRules();
     return true;
@@ -2080,6 +2096,25 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     }
     list.dataset.filled = "1";
   }
+  function cssSelectorSuggestions(typed) {
+    const query = String(typed || "").trim().toLowerCase();
+    const set = new Set();
+    try {
+      collectCssRuleTargets().rules.forEach((rule) => set.add(rule.selector));
+    } catch { }
+    try {
+      const doc = new DOMParser().parseFromString(getSource(), "text/html");
+      doc.querySelectorAll("*").forEach((el) => {
+        set.add(el.tagName.toLowerCase());
+        if (el.id) set.add("#" + el.id);
+        for (const cls of String(el.className || "").split(/\s+/).filter(Boolean)) set.add("." + cls);
+      });
+    } catch { }
+    let list = Array.from(set);
+    if (query) list = list.filter((item) => item.toLowerCase().includes(query));
+    return list.slice(0, 80);
+  }
+
   function appendCssDeclRow(prop, value) {
     const host = $("cssDeclRows");
     if (!host) return null;
@@ -2088,7 +2123,6 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     row.className = "css-decl-row";
     const name = document.createElement("input");
     name.className = "css-decl-prop";
-    name.setAttribute("list", "cssPropertyCatalog");
     name.placeholder = "property";
     name.spellcheck = false;
     name.value = prop || "";
@@ -2108,6 +2142,29 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     remove.addEventListener("click", () => { row.remove(); syncCssDeclarationsFromRows(); });
     name.addEventListener("input", syncCssDeclarationsFromRows);
     val.addEventListener("input", syncCssDeclarationsFromRows);
+    attachAutocomplete(name, (typed) => {
+      const q = String(typed || "").trim().toLowerCase();
+      let list = getCssProperties();
+      if (q) list = list.filter((prop) => prop.toLowerCase().includes(q));
+      return list.sort((a, b) => {
+        const as = a.toLowerCase().startsWith(q) ? 0 : 1;
+        const bs = b.toLowerCase().startsWith(q) ? 0 : 1;
+        return as - bs || a.localeCompare(b);
+      });
+    }, (prop) => {
+      name.value = prop;
+      syncCssDeclarationsFromRows();
+      val.focus();
+    }, { enterAcceptsFirst: false, above: true });
+    attachAutocomplete(val, (typed) => {
+      const q = String(typed || "").trim().toLowerCase();
+      let list = getValueSuggestions(name.value);
+      if (q) list = list.filter((value) => value.toLowerCase().includes(q));
+      return list;
+    }, (picked) => {
+      val.value = picked;
+      syncCssDeclarationsFromRows();
+    }, { enterAcceptsFirst: false, above: true });
     val.addEventListener("keydown", (event) => {
       if (event.key === "Enter") { event.preventDefault(); appendCssDeclRow("", ""); }
     });
@@ -2139,35 +2196,56 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     target.value = lines.join("\n");
   }
 
+  function cssRuleItemHtml(rule) {
+    const count = splitCssDeclarations(rule.declarations).filter((part) => part.includes(":")).length;
+    return { count: count };
+  }
+  function setCssRuleBadge(text) {
+    const badge = $("cssRuleBadge");
+    if (badge) badge.textContent = text || "New rule";
+  }
+  function resetCssRuleDraft() {
+    cssRuleTarget = null;
+    $("cssSelector").value = "";
+    $("cssState").value = "";
+    $("cssDeclarations").value = "";
+    renderCssDeclRows("");
+    setCssRuleBadge("New rule");
+    const select = $("cssRuleSelect");
+    if (select) select.value = "";
+  }
   function renderCssRules() {
     const host = $("cssRuleList");
     if (!host) return;
     const all = collectCssRuleTargets();
+    const query = cssRuleFilter.trim().toLowerCase();
+    const rules = query ? all.rules.filter((rule) => rule.selector.toLowerCase().includes(query)) : all.rules;
+    const count = $("cssRuleCount");
+    if (count) count.textContent = query ? rules.length + " / " + all.rules.length + " rules" : all.rules.length + " rules";
     host.innerHTML = "";
-    if (!all.rules.length) {
+    if (!rules.length) {
       const empty = document.createElement("div");
       empty.className = "tab-hint";
-      empty.textContent = "No CSS rules yet. Pick a rule below or fill selector + declarations and click Apply rule.";
+      empty.textContent = all.rules.length ? "No rule matches the filter." : "No CSS rules yet. Click + New rule to create one.";
       host.appendChild(empty);
       populateCssRuleSelect();
       return;
     }
-    for (const rule of all.rules) {
+    for (const rule of rules) {
       const item = document.createElement("button");
       item.type = "button";
       item.className = "css-rule-item";
       item.dataset.block = String(rule.blockIndex);
       item.dataset.rule = String(rule.ruleIndex);
-      const head = document.createElement("span");
-      head.textContent = rule.selector;
-      item.appendChild(head);
-      const decl = document.createElement("span");
-      decl.className = "css-rule-decl";
-      decl.textContent = rule.declarations;
-      item.appendChild(decl);
-      if (cssRuleTarget && item.dataset.block === String(cssRuleTarget.blockIndex) && item.dataset.rule === String(cssRuleTarget.ruleIndex)) {
-        item.classList.add("active");
-      }
+      const name = document.createElement("span");
+      name.className = "css-rule-name";
+      name.textContent = rule.selector;
+      item.appendChild(name);
+      const meta = document.createElement("span");
+      meta.className = "css-rule-meta";
+      meta.textContent = cssRuleItemHtml(rule).count + " properties · style #" + (rule.blockIndex + 1);
+      item.appendChild(meta);
+      if (cssRuleTarget && item.dataset.block === String(cssRuleTarget.blockIndex) && item.dataset.rule === String(cssRuleTarget.ruleIndex)) item.classList.add("active");
       item.addEventListener("click", () => loadCssRuleTarget(rule.blockIndex, rule.ruleIndex));
       host.appendChild(item);
     }
@@ -2733,6 +2811,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
       $("addStyleBlockBtn").addEventListener("click", addStyleBlock);
     $("deleteCssRuleBtn").addEventListener("click", deleteCssRule);
     $("cssSelector").addEventListener("change", loadCssRuleForDraft);
+    attachAutocomplete($("cssSelector"), (typed) => cssSelectorSuggestions(typed), (picked) => { $("cssSelector").value = picked; }, { enterAcceptsFirst: false });
     $("cssRuleSelect").addEventListener("change", () => {
       const value = $("cssRuleSelect").value;
       if (!value) { cssRuleTarget = null; return; }
