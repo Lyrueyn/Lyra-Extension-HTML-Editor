@@ -81,3 +81,8 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 
 - CSS 标签页新增 Style blocks：可直接在右栏编辑每个 `<style>` 块的内容，Apply 写回源码，支持 Format CSS、删除块、新增块。
 - 工具栏新增 Wrap 开关：长 data URI 太多时可关闭软换行，改横向滚动。
+
+## 1.3.0
+
+- 打开文档 / 切换笔记 / 从 Reader 进入编辑模式时自动格式化一次：长属性、`<img>` 缩进、`style` 内 CSS 自动整理，不需要先手动点 Format。
+- 自动格式化不标记文件为已修改；用户真正编辑或保存时才写回。

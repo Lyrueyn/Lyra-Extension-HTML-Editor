@@ -103,6 +103,7 @@
       if (d.title) note.meta.title = d.title;
       if (Array.isArray(d.assets)) { replaceEmbeddedAssets(d.assets); renderAssets(); }
       showCurrentNote();
+      autoFormatSource();
       $("saveState").textContent = "已加载";
       $("saveState").className = "save-state";
     } finally {
@@ -873,9 +874,19 @@
     if (note) note.html = formatted;
     state.sourceMap = annotateHtml(formatted).map;
     clearSelection();
-    markDirty();
-    schedulePreview(false);
-    scheduleSave();
+    if (silent) {
+      schedulePreview(false);
+    } else {
+      markDirty();
+      schedulePreview(false);
+      scheduleSave();
+    }
+  }
+  function autoFormatSource() {
+    try {
+      if (!getSource().trim()) return;
+      formatSource(true);
+    } catch (e) { console.warn("auto format failed", e); }
   }
 
   // ---------- 默认内容 ----------
@@ -2374,6 +2385,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     }
     $("notebookTitle").value = state.manifest.title || "未命名笔记本";
     showCurrentNote();
+    autoFormatSource();
     setInspectorEnabled(false);
     $("saveState").textContent = "已保存";
     $("saveState").className = "save-state";
@@ -2390,6 +2402,7 @@ code { font-family: Consolas, "Cascadia Mono", monospace; background: #f1f4f8; p
     document.body.classList.add("embedded");
     $("notebookTitle").value = "HTML Editor";
     showCurrentNote();
+    autoFormatSource();
     setInspectorEnabled(false);
     $("saveState").textContent = "等待内容…";
     $("saveState").className = "save-state";
