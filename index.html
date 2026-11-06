@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="vendor/codemirror/codemirror.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/hint/show-hint.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/fold/foldgutter.min.css"/>
-  <link rel="stylesheet" href="style.css?v=287"/>
+  <link rel="stylesheet" href="style.css?v=288"/>
 </head>
 <body>
 <div class="app">
@@ -37,6 +37,14 @@
           <button id="wrapBtn" class="ghost" type="button" title="Toggle source soft wrap (off: horizontal scroll for long attrs)">Wrap</button>
           <button id="imageBtn" class="ghost" type="button" title="Insert image file">Image</button>
             <button id="sourceFindBtn" class="ghost" type="button" title="Find / Replace (Ctrl+F / Ctrl+H)">Find</button>
+            <select id="editorTheme" class="theme-select" title="编辑器配色">
+              <option value="lyra">天依蓝</option>
+              <option value="violet">深空紫</option>
+              <option value="emerald">森林绿</option>
+              <option value="sunset">暖阳橙</option>
+              <option value="sakura">樱花粉</option>
+              <option value="light">极简白</option>
+            </select>
         </div>
       </div>
       <div class="code-wrap">
@@ -231,6 +239,6 @@
 <script src="vendor/codemirror/addon/fold/foldcode.min.js"></script>
 <script src="vendor/codemirror/addon/fold/foldgutter.min.js"></script>
 <script src="vendor/codemirror/addon/selection/active-line.min.js"></script>
-<script src="app.js?v=287"></script>
+<script src="app.js?v=288"></script>
 </body>
 </html>

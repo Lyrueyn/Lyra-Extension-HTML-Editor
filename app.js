@@ -1027,6 +1027,21 @@
     setTimeout(() => { runSourceFind(true); }, 60);
   }
 
+  const EDITOR_THEMES = ["lyra", "violet", "emerald", "sunset", "sakura", "light"];
+  function applyEditorTheme(id) {
+    const theme = EDITOR_THEMES.includes(id) ? id : "lyra";
+    document.documentElement.dataset.editorTheme = theme;
+    try { localStorage.setItem("lyra-editor-theme", theme); } catch { }
+    const select = $("editorTheme");
+    if (select) select.value = theme;
+  }
+  function initEditorTheme() {
+    let saved = "lyra";
+    try { saved = localStorage.getItem("lyra-editor-theme") || "lyra"; } catch { }
+    applyEditorTheme(saved);
+    const select = $("editorTheme");
+    if (select) select.addEventListener("change", () => applyEditorTheme(select.value));
+  }
   function initSourceEditor() {
     if (state.mirror || !window.CodeMirror) return;
     const cm = CodeMirror($("sourceEditor"), {
@@ -3465,6 +3480,7 @@ function switchTab(name) {
 
   // ---------- 事件 ----------
   function bind() {
+  initEditorTheme();
     initSourceEditor();
     $("formatBtn").addEventListener("click", formatSource);
     $("wrapBtn").addEventListener("click", () => {

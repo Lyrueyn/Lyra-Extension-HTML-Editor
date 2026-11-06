@@ -224,3 +224,9 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 
 - Assets 外部资源支持 Replace / Rename / Delete；通过宿主 host.file.rename/delete 操作并同步改写 HTML 引用。
 - 需要主程序 1.4.8+；缓存 286。
+
+## 1.18.0
+
+- 新增 6 套编辑器配色：天依蓝 / 深空紫 / 森林绿 / 暖阳橙 / 樱花粉 / 极简白。
+- 顶栏选择并持久化到 localStorage；含浅色语法配色。
+- 缓存 288。
