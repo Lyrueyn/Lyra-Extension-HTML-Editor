@@ -744,3 +744,18 @@ html[data-editor-theme="light"] .console-source {
 html[data-editor-theme="light"] button:disabled,
 html[data-editor-theme="light"] .style-field input:disabled,
 html[data-editor-theme="light"] .style-field select:disabled { color: #8796a5 !important; }
+
+
+/* Per-theme editor selection colors */
+html[data-editor-theme="lyra"] .CodeMirror-selected { background: #173f6b !important; }
+html[data-editor-theme="lyra"] .CodeMirror-focused .CodeMirror-selected { background: #2463a3 !important; }
+html[data-editor-theme="violet"] .CodeMirror-selected { background: #33204f !important; }
+html[data-editor-theme="violet"] .CodeMirror-focused .CodeMirror-selected { background: #4b2f78 !important; }
+html[data-editor-theme="emerald"] .CodeMirror-selected { background: #0f3b2b !important; }
+html[data-editor-theme="emerald"] .CodeMirror-focused .CodeMirror-selected { background: #155c44 !important; }
+html[data-editor-theme="sunset"] .CodeMirror-selected { background: #4a2a16 !important; }
+html[data-editor-theme="sunset"] .CodeMirror-focused .CodeMirror-selected { background: #6b3a1f !important; }
+html[data-editor-theme="sakura"] .CodeMirror-selected { background: #4a2333 !important; }
+html[data-editor-theme="sakura"] .CodeMirror-focused .CodeMirror-selected { background: #6b2f47 !important; }
+html[data-editor-theme="light"] .CodeMirror-selected { background: #d6e9f7 !important; }
+html[data-editor-theme="light"] .CodeMirror-focused .CodeMirror-selected { background: #bfe0f5 !important; }
