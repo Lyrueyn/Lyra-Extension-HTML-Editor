@@ -48,6 +48,10 @@
     consoleSeq: 0,
     matchedMarks: [],
     matchTimer: 0,
+    sourceFindMarks: [],
+    sourceFindMatches: [],
+    sourceFindIndex: -1,
+    sourceFindTimer: 0,
   };
 
   // ---------- 宿主桥接 ----------
@@ -905,6 +909,105 @@
     state.matchTimer = setTimeout(updateMatchedTags, 20);
   }
 
+  function clearSourceFindMarks() {
+    const cm = state.mirror;
+    if (!cm) return;
+    (state.sourceFindMarks || []).forEach((mark) => { try { mark.clear(); } catch { } });
+    state.sourceFindMarks = [];
+  }
+  function updateSourceFindCount() {
+    const el = $("sourceFindCount");
+    if (!el) return;
+    const total = (state.sourceFindMatches || []).length;
+    el.textContent = total ? (state.sourceFindIndex + 1) + "/" + total : "0/0";
+  }
+  function renderSourceFindMarks() {
+    const cm = state.mirror;
+    if (!cm) return;
+    clearSourceFindMarks();
+    (state.sourceFindMatches || []).forEach((match, index) => {
+      const className = "cm-source-find" + (index === state.sourceFindIndex ? " cm-source-find-current" : "");
+      state.sourceFindMarks.push(cm.markText(cm.posFromIndex(match.from), cm.posFromIndex(match.to), { className: className }));
+    });
+    updateSourceFindCount();
+  }
+  function selectSourceFindMatch(index) {
+    const matches = state.sourceFindMatches || [];
+    if (!matches.length) { updateSourceFindCount(); return; }
+    state.sourceFindIndex = (index + matches.length) % matches.length;
+    renderSourceFindMarks();
+    const cm = state.mirror;
+    const match = matches[state.sourceFindIndex];
+    if (cm && match) {
+      try { cm.scrollIntoView({ from: cm.posFromIndex(match.from), to: cm.posFromIndex(match.to) }, 80); } catch { }
+    }
+  }
+  function runSourceFind(resetIndex) {
+    const cm = state.mirror;
+    if (!cm) return;
+    const query = ($("sourceFindInput").value || "");
+    const matches = [];
+    if (query) {
+      const caseSensitive = !!($("sourceFindCase") && $("sourceFindCase").checked);
+      const text = cm.getValue();
+      const needle = caseSensitive ? query : query.toLowerCase();
+      const haystack = caseSensitive ? text : text.toLowerCase();
+      let at = haystack.indexOf(needle);
+      while (at >= 0 && matches.length < 5000) {
+        matches.push({ from: at, to: at + query.length });
+        at = haystack.indexOf(needle, at + Math.max(1, query.length));
+      }
+    }
+    state.sourceFindMatches = matches;
+    if (resetIndex || state.sourceFindIndex < 0 || state.sourceFindIndex >= matches.length) state.sourceFindIndex = matches.length ? 0 : -1;
+    renderSourceFindMarks();
+    if (matches.length) selectSourceFindMatch(state.sourceFindIndex);
+  }
+  function scheduleSourceFindRefresh() {
+    clearTimeout(state.sourceFindTimer);
+    state.sourceFindTimer = setTimeout(() => {
+      if ($("sourceFindBar") && !$("sourceFindBar").hidden) runSourceFind(false);
+    }, 90);
+  }
+  function openSourceFindBar() {
+    const bar = $("sourceFindBar");
+    if (!bar) return;
+    bar.hidden = false;
+    const input = $("sourceFindInput");
+    input.focus();
+    input.select();
+    runSourceFind(true);
+  }
+  function closeSourceFindBar() {
+    const bar = $("sourceFindBar");
+    if (bar) bar.hidden = true;
+    state.sourceFindMatches = [];
+    state.sourceFindIndex = -1;
+    clearSourceFindMarks();
+    updateSourceFindCount();
+  }
+  function replaceSourceFindOne() {
+    const cm = state.mirror;
+    const matches = state.sourceFindMatches || [];
+    if (!cm || !matches.length) return;
+    const match = matches[state.sourceFindIndex];
+    if (!match) return;
+    const replacement = $("sourceReplaceInput").value || "";
+    const index = state.sourceFindIndex;
+    cm.replaceRange(replacement, cm.posFromIndex(match.from), cm.posFromIndex(match.to));
+    setTimeout(() => { runSourceFind(false); if (state.sourceFindMatches.length) selectSourceFindMatch(Math.min(index, state.sourceFindMatches.length - 1)); }, 60);
+  }
+  function replaceSourceFindAll() {
+    const cm = state.mirror;
+    const matches = state.sourceFindMatches || [];
+    if (!cm || !matches.length) return;
+    const replacement = $("sourceReplaceInput").value || "";
+    for (let i = matches.length - 1; i >= 0; i -= 1) {
+      cm.replaceRange(replacement, cm.posFromIndex(matches[i].from), cm.posFromIndex(matches[i].to));
+    }
+    setTimeout(() => { runSourceFind(true); }, 60);
+  }
+
   function initSourceEditor() {
     if (state.mirror || !window.CodeMirror) return;
     const cm = CodeMirror($("sourceEditor"), {
@@ -933,6 +1036,7 @@
     cm.on("change", () => {
       if (state.suppressMirror) return;
         scheduleMatchedTags();
+        scheduleSourceFindRefresh();
       const note = currentNote();
       if (note) note.html = cm.getValue();
       state.sourceMap = annotateHtml(cm.getValue()).map;
@@ -3357,6 +3461,27 @@ function switchTab(name) {
         updateConsoleBadge();
         renderConsole();
       });
+    $("sourceFindBtn").addEventListener("click", openSourceFindBar);
+    $("sourceFindClose").addEventListener("click", closeSourceFindBar);
+    $("sourceFindPrev").addEventListener("click", () => selectSourceFindMatch(state.sourceFindIndex - 1));
+    $("sourceFindNext").addEventListener("click", () => selectSourceFindMatch(state.sourceFindIndex + 1));
+    $("sourceReplaceOne").addEventListener("click", replaceSourceFindOne);
+    $("sourceReplaceAll").addEventListener("click", replaceSourceFindAll);
+    $("sourceFindCase").addEventListener("change", () => runSourceFind(true));
+    $("sourceFindInput").addEventListener("input", () => { clearTimeout(state.sourceFindTimer); state.sourceFindTimer = setTimeout(() => runSourceFind(true), 80); });
+    $("sourceFindInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); selectSourceFindMatch(state.sourceFindIndex + (e.shiftKey ? -1 : 1)); }
+      else if (e.key === "Escape") { e.preventDefault(); closeSourceFindBar(); }
+    });
+    $("sourceReplaceInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); replaceSourceFindOne(); }
+      else if (e.key === "Escape") { e.preventDefault(); closeSourceFindBar(); }
+    });
+    window.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "f") { e.preventDefault(); openSourceFindBar(); }
+      else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "h") { e.preventDefault(); openSourceFindBar(); $("sourceReplaceInput").focus(); }
+      else if (e.key === "Escape" && $("sourceFindBar") && !$("sourceFindBar").hidden) closeSourceFindBar();
+    });
     $("notebookTitle").addEventListener("input", () => {
       if (!state.manifest) return;
       state.manifest.title = $("notebookTitle").value.trim() || "未命名笔记本";

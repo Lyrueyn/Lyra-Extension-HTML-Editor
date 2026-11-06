@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="vendor/codemirror/codemirror.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/hint/show-hint.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/fold/foldgutter.min.css"/>
-  <link rel="stylesheet" href="style.css?v=285"/>
+  <link rel="stylesheet" href="style.css?v=286"/>
 </head>
 <body>
 <div class="app">
@@ -36,10 +36,26 @@
           <button id="formatBtn" class="ghost" type="button" title="Format HTML (Shift+Alt+F)">Format</button>
           <button id="wrapBtn" class="ghost" type="button" title="Toggle source soft wrap (off: horizontal scroll for long attrs)">Wrap</button>
           <button id="imageBtn" class="ghost" type="button" title="Insert image file">Image</button>
+            <button id="sourceFindBtn" class="ghost" type="button" title="Find / Replace (Ctrl+F / Ctrl+H)">Find</button>
         </div>
       </div>
       <div class="code-wrap">
         <div id="sourceEditor" class="source-editor"></div>
+          <div id="sourceFindBar" class="source-find-bar" hidden>
+            <div class="source-find-row">
+              <input id="sourceFindInput" type="text" placeholder="查找…" spellcheck="false" autocomplete="off"/>
+              <span id="sourceFindCount" class="source-find-count">0/0</span>
+              <button id="sourceFindPrev" type="button" title="上一个 (Shift+Enter)">↑</button>
+              <button id="sourceFindNext" type="button" title="下一个 (Enter)">↓</button>
+              <label class="source-find-case" title="区分大小写"><input id="sourceFindCase" type="checkbox"/> Aa</label>
+              <button id="sourceFindClose" type="button" title="关闭 (Esc)">×</button>
+            </div>
+            <div class="source-replace-row">
+              <input id="sourceReplaceInput" type="text" placeholder="替换为…" spellcheck="false" autocomplete="off"/>
+              <button id="sourceReplaceOne" type="button">替换</button>
+              <button id="sourceReplaceAll" type="button">全部替换</button>
+            </div>
+          </div>
       </div>
     </section>
 
@@ -214,6 +230,6 @@
 <script src="vendor/codemirror/addon/fold/foldcode.min.js"></script>
 <script src="vendor/codemirror/addon/fold/foldgutter.min.js"></script>
 <script src="vendor/codemirror/addon/selection/active-line.min.js"></script>
-<script src="app.js?v=285"></script>
+<script src="app.js?v=286"></script>
 </body>
 </html>

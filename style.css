@@ -379,3 +379,49 @@ body.embedded .app { height: 100vh; }
 .asset-card.no-thumb { grid-template-columns: minmax(0, 1fr); }
 .asset-card.no-thumb .asset-meta { grid-column: 1 / -1; }
 .asset-card.no-thumb .asset-path { overflow-wrap: anywhere; }
+
+
+/* Source find / replace */
+.source-find-bar {
+  position: absolute;
+  z-index: 25;
+  top: 8px;
+  right: 8px;
+  width: min(430px, calc(100% - 16px));
+  padding: 7px;
+  border: 1px solid #2a4358;
+  border-radius: 8px;
+  background: rgba(14, 23, 33, .98);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .45);
+}
+.source-find-bar[hidden] { display: none; }
+.source-find-row, .source-replace-row { display: flex; align-items: center; gap: 5px; }
+.source-replace-row { margin-top: 6px; }
+.source-find-row input, .source-replace-row input {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #2a3c4c;
+  border-radius: 5px;
+  background: #0a0f15;
+  color: #d8e4ef;
+  padding: 4px 6px;
+  font: 11px Consolas, "Cascadia Mono", monospace;
+  outline: none;
+}
+.source-find-row input:focus, .source-replace-row input:focus { border-color: var(--accent); }
+.source-find-bar button {
+  border: 1px solid #2a3c4c;
+  background: #111b25;
+  color: #c8d7e6;
+  border-radius: 5px;
+  padding: 4px 7px;
+  font-size: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.source-find-bar button:hover { border-color: var(--accent); color: #fff; }
+.source-find-count { color: #7f93a8; font: 10px Consolas, monospace; min-width: 34px; text-align: center; }
+.source-find-case { display: flex; align-items: center; gap: 2px; color: #9fb4c9; font: 10px Consolas, monospace; cursor: pointer; user-select: none; }
+.source-find-case input { accent-color: var(--accent); }
+.cm-source-find { background: rgba(255, 220, 100, .35); border-radius: 2px; }
+.cm-source-find-current { background: #ffb020; color: #201200 !important; border-radius: 2px; }
