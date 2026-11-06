@@ -219,3 +219,8 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 
 - 源码查找/替换：Ctrl+F / Ctrl+H，区分大小写，全部命中高亮，上下切换，替换当前/全部。
 - 缓存 286。
+
+## 1.17.8
+
+- Assets 外部资源支持 Replace / Rename / Delete；通过宿主 host.file.rename/delete 操作并同步改写 HTML 引用。
+- 需要主程序 1.4.8+；缓存 286。

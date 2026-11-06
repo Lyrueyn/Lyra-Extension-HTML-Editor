@@ -15,6 +15,8 @@
   let embeddedAssetMode = "package";
     let embeddedBaseHref = "";
     let pendingAssetRequest = null;
+  let pendingFileRequests = new Map();
+  let fileRequestSeq = 0;
   let cssRuleTarget = null;
   let cssRuleFilter = "";
   let cssDraftSelectors = [];
@@ -85,6 +87,19 @@
       parent.postMessage(Object.assign({ channel: EMBED_CHANNEL, type: type }, extra || {}), "*");
     } catch { }
   }
+  function requestFileOp(type, extra) {
+    if (host && !EMBEDDED) return hostCall(type, extra || {});
+    return new Promise((resolve) => {
+      const requestId = "file-" + (++fileRequestSeq) + "-" + Date.now();
+      pendingFileRequests.set(requestId, resolve);
+      postToParent("file-request", Object.assign({ requestId: requestId, command: type }, extra || {}));
+      setTimeout(() => {
+        if (!pendingFileRequests.has(requestId)) return;
+        pendingFileRequests.delete(requestId);
+        resolve({ ok: false, error: "宿主响应超时" });
+      }, 15000);
+    });
+  }
   function notifyParentChange() {
     if (!EMBEDDED || embeddedSuppressNotify) return;
     clearTimeout(embeddedNotifyTimer);
@@ -135,6 +150,10 @@
       if (d.channel !== EMBED_CHANNEL) return;
       if (d.type === "init" || d.type === "set-document") applyEmbeddedDoc(d);
       else if (d.type === "request-document") postToParent("document", { html: getSource() });
+      else if (d.type === "file-result") {
+        const resolve = pendingFileRequests.get(d.requestId);
+        if (resolve) { pendingFileRequests.delete(d.requestId); resolve(d); }
+      }
       else if (d.type === "asset-result" && pendingAssetRequest && d.requestId === pendingAssetRequest.requestId) {         const pending = pendingAssetRequest;         pendingAssetRequest = null;         if (d.ok && d.path) {           insertTextAtCursor('\n<img src="' + escapeAttr(d.path) + '" alt="' + pending.alt + '">\n');           markDirty();           schedulePreview(false);           scheduleSave();         } else {           alert("图片保存失败：" + (d.error || "未知错误"));         }       }
     });
   }
@@ -2198,6 +2217,67 @@ function switchTab(name) {
     }
   }
 
+  function rewriteExternalAssetReferences(oldRef, newRef) {
+    syncCurrent();
+    for (const note of state.notes.values()) note.html = String(note.html || "").split(oldRef).join(newRef);
+    const note = currentNote();
+    if (note) { setSourceValue(note.html || "", false); state.sourceMap = annotateHtml(note.html || "").map; }
+    markDirty();
+    schedulePreview(false);
+    renderAssets();
+  }
+  async function renameExternalAsset(ref) {
+    const oldName = String(ref || "").split("/").pop() || "asset";
+    const nextName = (prompt("重命名资源文件", oldName) || "").trim();
+    if (!nextName || nextName === oldName) return;
+    if (/[\\/:*?"<>|]/.test(nextName)) { alert("文件名不能包含 \\ / : * ? \" < > |"); return; }
+    const dir = ref.includes("/") ? ref.slice(0, ref.lastIndexOf("/") + 1) : "assets/";
+    const nextRef = dir + nextName;
+    try {
+      const res = await requestFileOp("host.file.rename", { from: ref, to: nextRef });
+      if (!res || !res.ok) throw new Error((res && res.error) || "重命名失败");
+      rewriteExternalAssetReferences(ref, nextRef);
+    } catch (e) { alert("重命名失败：" + (e && e.message ? e.message : e)); }
+  }
+  async function deleteExternalAsset(ref) {
+    if (!confirm("删除外部资源文件并移除引用？\n" + ref)) return;
+    try {
+      const res = await requestFileOp("host.file.delete", { path: ref });
+      if (!res || !res.ok) throw new Error((res && res.error) || "删除失败");
+      const escaped = ref.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const tagRe = new RegExp("<[^>]*(?:src|href)\\s*=\\s*([\"'])" + escaped + "\\1[^>]*>", "gi");
+      const cssRe = new RegExp("url\\(\\s*([\"']?)" + escaped + "\\1\\s*\\)", "gi");
+      syncCurrent();
+      for (const note of state.notes.values()) note.html = String(note.html || "").replace(tagRe, "").replace(cssRe, "none");
+      const note = currentNote();
+      if (note) { setSourceValue(note.html || "", false); state.sourceMap = annotateHtml(note.html || "").map; }
+      markDirty();
+      schedulePreview(false);
+      renderAssets();
+    } catch (e) { alert("删除失败：" + (e && e.message ? e.message : e)); }
+  }
+  function replaceExternalAsset(ref) {
+    state.pendingExternalAssetPath = ref;
+    const input = $("externalAssetInput");
+    if (input) input.click();
+  }
+  async function replaceExternalAssetFile(file) {
+    const ref = state.pendingExternalAssetPath;
+    state.pendingExternalAssetPath = "";
+    if (!ref || !file) return;
+    if (!/^image\//.test(file.type || "")) { alert("只支持替换图片资源"); return; }
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      let binary = "";
+      const chunk = 0x8000;
+      for (let i = 0; i < bytes.length; i += chunk) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
+      const res = await requestFileOp("host.file.save", { path: ref, data: btoa(binary) });
+      if (!res || !res.ok) throw new Error((res && res.error) || "替换失败");
+      renderPreview(false);
+      renderAssets();
+    } catch (e) { alert("替换失败：" + (e && e.message ? e.message : e)); }
+  }
+
   function renderAssets() {
     const host = $("assetList");
     if (!host) return;
@@ -2237,6 +2317,20 @@ function switchTab(name) {
         card.appendChild(meta);
         const actions = document.createElement("div");
         actions.className = "asset-actions";
+        if (isImage) {
+          const replace = document.createElement("button");
+          replace.type = "button"; replace.className = "ghost"; replace.textContent = "Replace";
+          replace.addEventListener("click", () => replaceExternalAsset(ref));
+          actions.appendChild(replace);
+        }
+        const rename = document.createElement("button");
+        rename.type = "button"; rename.className = "ghost"; rename.textContent = "Rename";
+        rename.addEventListener("click", () => renameExternalAsset(ref));
+        actions.appendChild(rename);
+        const del = document.createElement("button");
+        del.type = "button"; del.className = "ghost danger-text"; del.textContent = "Delete";
+        del.addEventListener("click", () => deleteExternalAsset(ref));
+        actions.appendChild(del);
         const copy = document.createElement("button");
         copy.type = "button"; copy.className = "ghost"; copy.textContent = "Copy path";
         copy.addEventListener("click", () => {
@@ -3390,6 +3484,11 @@ function switchTab(name) {
       const file = e.target.files && e.target.files[0];
       e.target.value = "";
       if (file) await replaceAssetFile(file).catch(showError);
+    });
+    $("externalAssetInput").addEventListener("change", async (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = "";
+      if (file) await replaceExternalAssetFile(file);
     });
     $("refreshAssetsBtn").addEventListener("click", checkAssetReferences);
     $("viewportSelect").addEventListener("change", () => {
