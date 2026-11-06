@@ -364,23 +364,18 @@ body.embedded .app { height: 100vh; }
 
 
 /* Matching tag pair highlight (under cursor) */
-.cm-s-lyra .cm-matched-tag {
-  border-radius: 2px;
-  background: rgba(126, 224, 255, .12);
-  border-bottom: 1px dotted rgba(126, 224, 255, .72);
-}
-.cm-s-lyra .cm-matched-tag,
-.cm-s-lyra .cm-matched-tag span { color: #dff7ff !important; }
-.cm-s-lyra .cm-matched-tag.cm-match-block { background: rgba(155, 231, 168, .14); border-bottom-color: rgba(155, 231, 168, .72); }
-.cm-s-lyra .cm-matched-tag.cm-match-block, .cm-s-lyra .cm-matched-tag.cm-match-block span { color: #e3fbe8 !important; }
-.cm-s-lyra .cm-matched-tag.cm-match-text { background: rgba(255, 154, 170, .13); border-bottom-color: rgba(255, 154, 170, .70); }
-.cm-s-lyra .cm-matched-tag.cm-match-text, .cm-s-lyra .cm-matched-tag.cm-match-text span { color: #ffe4ea !important; }
-.cm-s-lyra .cm-matched-tag.cm-match-style { background: rgba(212, 165, 255, .14); border-bottom-color: rgba(212, 165, 255, .72); }
-.cm-s-lyra .cm-matched-tag.cm-match-style, .cm-s-lyra .cm-matched-tag.cm-match-style span { color: #f1e2ff !important; }
-.cm-s-lyra .cm-matched-tag.cm-match-script { background: rgba(255, 154, 170, .12); border-bottom-color: rgba(255, 154, 170, .65); }
-.cm-s-lyra .cm-matched-tag.cm-match-media { background: rgba(122, 162, 255, .15); border-bottom-color: rgba(122, 162, 255, .72); }
-.cm-s-lyra .cm-matched-tag.cm-match-media, .cm-s-lyra .cm-matched-tag.cm-match-media span { color: #e1eaff !important; }
-.cm-s-lyra .cm-matched-tag.cm-match-doc { background: rgba(126, 224, 255, .13); border-bottom-color: rgba(126, 224, 255, .72); }
+.cm-s-lyra .cm-matched-tag { border-radius: 2px; background: rgba(126, 224, 255, .14); }
+.cm-s-lyra .cm-matched-tag.cm-match-block { background: rgba(155, 231, 168, .16); }
+.cm-s-lyra .cm-matched-tag.cm-match-text { background: rgba(255, 154, 170, .15); }
+.cm-s-lyra .cm-matched-tag.cm-match-style { background: rgba(212, 165, 255, .16); }
+.cm-s-lyra .cm-matched-tag.cm-match-script { background: rgba(255, 154, 170, .14); }
+.cm-s-lyra .cm-matched-tag.cm-match-media { background: rgba(122, 162, 255, .17); }
+.cm-s-lyra .cm-matched-tag.cm-match-doc { background: rgba(126, 224, 255, .15); }
 
-.cm-s-lyra .cm-matched-tag.cm-match-level-1 { background: rgba(126, 224, 255, .10) !important; border-bottom-style: dashed; }
-.cm-s-lyra .cm-matched-tag.cm-match-level-2 { background: rgba(126, 224, 255, .07) !important; border-bottom-style: dotted; }
+.cm-s-lyra .cm-matched-tag.cm-match-level-1 { background: rgba(126, 224, 255, .09) !important; }
+.cm-s-lyra .cm-matched-tag.cm-match-level-2 { background: rgba(126, 224, 255, .055) !important; }
+
+/* External assets cards without a thumbnail must use the full panel width. */
+.asset-card.no-thumb { grid-template-columns: minmax(0, 1fr); }
+.asset-card.no-thumb .asset-meta { grid-column: 1 / -1; }
+.asset-card.no-thumb .asset-path { overflow-wrap: anywhere; }

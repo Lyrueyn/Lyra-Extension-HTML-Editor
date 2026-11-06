@@ -919,7 +919,7 @@
       matchBrackets: true,
       autoCloseBrackets: true,
       autoCloseTags: true,
-      styleActiveLine: true,
+      styleActiveLine: false,
       foldGutter: true,
       gutters: ["CodeMirror-linenumbers", "CodeMirror-foldgutter"],
       hintOptions: { completeSingle: false, closeOnUnfocus: true },
@@ -2115,12 +2115,15 @@ function switchTab(name) {
       for (const ref of refs) {
         const card = document.createElement("div");
         card.className = "asset-card";
-        if (embeddedBaseHref) {
+        const isImage = /\.(png|jpe?g|gif|webp|bmp|svg|avif)([?#].*)?$/i.test(ref);
+        if (embeddedBaseHref && isImage) {
           const img = document.createElement("img");
           img.src = embeddedBaseHref.replace(/\/$/, "") + "/" + ref;
           img.alt = ref;
-          img.onerror = () => { img.style.display = "none"; };
+          img.onerror = () => { img.style.display = "none"; card.classList.add("no-thumb"); };
           card.appendChild(img);
+        } else {
+          card.classList.add("no-thumb");
         }
         const meta = document.createElement("div");
         meta.className = "asset-meta";
