@@ -235,3 +235,8 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 
 - 每套主题单独定义 CodeMirror 选中文本背景色（含 focused）。
 - 缓存 289。
+
+## 1.19.0
+
+- 项目模式配套：baseHref 可指向当前 HTML 所在子目录；外部 assets 操作路径由 Reader 按目录转发。
+- 缓存 290。
