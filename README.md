@@ -240,3 +240,9 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 
 - 项目模式配套：baseHref 可指向当前 HTML 所在子目录；外部 assets 操作路径由 Reader 按目录转发。
 - 缓存 290。
+
+## 1.19.1
+
+- Inspect 按钮激活时使用主题 accent 实心高亮，明确显示开启状态。
+- 其余按钮激活态统一为更协调的主题色。
+- 缓存 291。

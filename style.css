@@ -759,3 +759,20 @@ html[data-editor-theme="sakura"] .CodeMirror-selected { background: #4a2333 !imp
 html[data-editor-theme="sakura"] .CodeMirror-focused .CodeMirror-selected { background: #6b2f47 !important; }
 html[data-editor-theme="light"] .CodeMirror-selected { background: #d6e9f7 !important; }
 html[data-editor-theme="light"] .CodeMirror-focused .CodeMirror-selected { background: #bfe0f5 !important; }
+
+
+/* Inspect / ghost toggle active state */
+button.ghost.active,
+.preview-actions button.active,
+#inspectBtn.active {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #06121a !important;
+  font-weight: 650;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, .10) inset;
+}
+html[data-editor-theme="light"] button.ghost.active,
+html[data-editor-theme="light"] .preview-actions button.active,
+html[data-editor-theme="light"] #inspectBtn.active {
+  color: #ffffff !important;
+}
