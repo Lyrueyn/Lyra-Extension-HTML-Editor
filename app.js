@@ -1034,6 +1034,7 @@
     try { localStorage.setItem("lyra-editor-theme", theme); } catch { }
     const select = $("editorTheme");
     if (select) select.value = theme;
+    if (EMBEDDED) { try { postToParent("theme", { theme: theme }); } catch { } }
   }
   function initEditorTheme() {
     let saved = "lyra";

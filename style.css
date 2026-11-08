@@ -776,3 +776,40 @@ html[data-editor-theme="light"] .preview-actions button.active,
 html[data-editor-theme="light"] #inspectBtn.active {
   color: #ffffff !important;
 }
+
+
+/* Harmonize preview controls with the chosen editor theme */
+html[data-editor-theme] { color-scheme: dark; }
+html[data-editor-theme="light"] { color-scheme: light; }
+html[data-editor-theme] .preview-actions button {
+  background: transparent !important;
+  border-color: var(--line) !important;
+  color: var(--sub) !important;
+}
+html[data-editor-theme] .preview-actions button:hover {
+  background: var(--panel2) !important;
+  color: var(--text) !important;
+  border-color: var(--accent) !important;
+}
+html[data-editor-theme] .preview-actions button.ghost.active,
+html[data-editor-theme] .preview-actions button.active {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #06121a !important;
+}
+html[data-editor-theme="light"] .preview-actions button.active { color: #ffffff !important; }
+html[data-editor-theme] .viewport-select {
+  background: var(--panel2) !important;
+  border-color: var(--line) !important;
+  color: var(--sub) !important;
+  border-radius: 6px;
+}
+html[data-editor-theme] .viewport-select:hover,
+html[data-editor-theme] .viewport-select:focus {
+  color: var(--text) !important;
+  border-color: var(--accent) !important;
+}
+html[data-editor-theme] .viewport-select option {
+  background: var(--panel);
+  color: var(--text);
+}
