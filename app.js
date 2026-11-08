@@ -924,7 +924,7 @@
         state.matchedMarks.push(cm.markText(cm.posFromIndex(pair.openMarkStart), cm.posFromIndex(pair.openMarkEnd), { className: className }));
         state.matchedMarks.push(cm.markText(cm.posFromIndex(pair.closeMarkStart), cm.posFromIndex(pair.closeMarkEnd), { className: className }));
       };
-      pairs.slice(0, 3).forEach((pair, level) => add(pair, level));
+      pairs.slice(0, 1).forEach((pair, level) => add(pair, level));
     } catch { }
   }
   function scheduleMatchedTags() {
