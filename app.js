@@ -877,14 +877,18 @@
       const name = (match[1] || "").toLowerCase();
       if (!name || MATCH_VOID_TAGS.has(name)) continue;
       const closing = /^<\//.test(token);
+      const coreStart = match.index;
+      const coreNameEnd = match.index + (closing ? 2 : 1) + name.length;
+      const afterName = token.slice(coreNameEnd - match.index);
+      const coreEnd = /^\s*>/.test(afterName) ? coreNameEnd + afterName.indexOf(">") + 1 : coreNameEnd;
       const selfClosing = /\/\s*>$/.test(token);
       if (!closing) {
-        if (!selfClosing) stack.push({ name: name, start: match.index, end: match.index + token.length });
+        if (!selfClosing) stack.push({ name: name, start: match.index, end: match.index + token.length, markStart: coreStart, markEnd: coreEnd });
       } else {
         for (let i = stack.length - 1; i >= 0; i -= 1) {
           if (stack[i].name !== name) continue;
           const open = stack[i];
-          pairs.push({ name: name, openStart: open.start, openEnd: open.end, closeStart: match.index, closeEnd: match.index + token.length });
+          pairs.push({ name: name, openStart: open.start, openEnd: open.end, closeStart: match.index, closeEnd: match.index + token.length, openMarkStart: open.markStart, openMarkEnd: open.markEnd, closeMarkStart: coreStart, closeMarkEnd: coreEnd });
           stack.length = i;
           break;
         }
@@ -917,8 +921,8 @@
       const add = (pair, level) => {
         const group = TAG_COLOR_LOOKUP[pair.name] || "other";
         const className = "cm-matched-tag cm-match-" + group + " cm-match-level-" + Math.min(level, 2);
-        state.matchedMarks.push(cm.markText(cm.posFromIndex(pair.openStart), cm.posFromIndex(pair.openEnd), { className: className }));
-        state.matchedMarks.push(cm.markText(cm.posFromIndex(pair.closeStart), cm.posFromIndex(pair.closeEnd), { className: className }));
+        state.matchedMarks.push(cm.markText(cm.posFromIndex(pair.openMarkStart), cm.posFromIndex(pair.openMarkEnd), { className: className }));
+        state.matchedMarks.push(cm.markText(cm.posFromIndex(pair.closeMarkStart), cm.posFromIndex(pair.closeMarkEnd), { className: className }));
       };
       pairs.slice(0, 3).forEach((pair, level) => add(pair, level));
     } catch { }
