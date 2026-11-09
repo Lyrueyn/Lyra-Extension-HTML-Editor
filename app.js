@@ -824,8 +824,8 @@
     CodeMirror.defineMode("lyra-html", function (config) {
       const base = CodeMirror.getMode(config, "htmlmixed");
       return {
-        startState: function () { return { inner: base.startState(), blockStack: [], pendingOpen: false, pendingClose: false }; },
-        copyState: function (st) { return { inner: base.copyState(st.inner), blockStack: st.blockStack.slice(), pendingOpen: st.pendingOpen, pendingClose: st.pendingClose }; },
+        startState: function () { return { inner: base.startState(), tagStack: [], pendingOpen: false, pendingClose: false }; },
+        copyState: function (st) { return { inner: base.copyState(st.inner), tagStack: st.tagStack.slice(), pendingOpen: st.pendingOpen, pendingClose: st.pendingClose }; },
         token: function (stream, st) {
           const style = base.token(stream, st.inner);
           const text = stream.current() || "";
@@ -839,16 +839,17 @@
               const closing = st.pendingClose || text.startsWith("</");
               const group = TAG_COLOR_LOOKUP[name] || "other";
               let extra = "ht-" + group;
-              if (group === "block") {
-                if (closing) {
-                  const depth = st.blockStack.length ? st.blockStack.pop() : 0;
-                  extra += " depth-" + depth;
-                } else {
-                  const depth = Math.min(st.blockStack.length, 5);
-                  extra += " depth-" + depth;
-                  if (!VOID_TAGS.has(name)) st.blockStack.push(depth);
+              let depth = 0;
+              if (closing) {
+                depth = Math.max(0, st.tagStack.length - 1);
+                for (let i = st.tagStack.length - 1; i >= 0; i -= 1) {
+                  if (st.tagStack[i] === name) { depth = i; st.tagStack.length = i; break; }
                 }
+              } else {
+                depth = Math.min(st.tagStack.length, 7);
+                if (!VOID_TAGS.has(name)) st.tagStack.push(name);
               }
+              extra += " depth-" + Math.min(depth, 7);
               st.pendingOpen = false;
               st.pendingClose = false;
               return style + " " + extra;
@@ -883,12 +884,12 @@
       const coreEnd = /^\s*>/.test(afterName) ? coreNameEnd + afterName.indexOf(">") + 1 : coreNameEnd;
       const selfClosing = /\/\s*>$/.test(token);
       if (!closing) {
-        if (!selfClosing) stack.push({ name: name, start: match.index, end: match.index + token.length, markStart: coreStart, markEnd: coreEnd });
+        if (!selfClosing) stack.push({ name: name, start: match.index, end: match.index + token.length, markStart: coreStart, markEnd: coreEnd, depth: Math.min(stack.length, 7) });
       } else {
         for (let i = stack.length - 1; i >= 0; i -= 1) {
           if (stack[i].name !== name) continue;
           const open = stack[i];
-          pairs.push({ name: name, openStart: open.start, openEnd: open.end, closeStart: match.index, closeEnd: match.index + token.length, openMarkStart: open.markStart, openMarkEnd: open.markEnd, closeMarkStart: coreStart, closeMarkEnd: coreEnd });
+          pairs.push({ name: name, openStart: open.start, openEnd: open.end, closeStart: match.index, closeEnd: match.index + token.length, openMarkStart: open.markStart, openMarkEnd: open.markEnd, closeMarkStart: coreStart, closeMarkEnd: coreEnd, depth: open.depth || 0 });
           stack.length = i;
           break;
         }
@@ -920,7 +921,7 @@
       if (!pairs.length) return;
       const add = (pair, level) => {
         const group = TAG_COLOR_LOOKUP[pair.name] || "other";
-        const className = "cm-matched-tag cm-match-" + group + " cm-match-level-" + Math.min(level, 2);
+        const className = "cm-matched-tag cm-match-" + group + " cm-match-level-" + Math.min(level, 2) + " cm-match-depth-" + Math.min(pair.depth || 0, 7);
         state.matchedMarks.push(cm.markText(cm.posFromIndex(pair.openMarkStart), cm.posFromIndex(pair.openMarkEnd), { className: className }));
         state.matchedMarks.push(cm.markText(cm.posFromIndex(pair.closeMarkStart), cm.posFromIndex(pair.closeMarkEnd), { className: className }));
       };
