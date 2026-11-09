@@ -1613,7 +1613,7 @@
     return `
 (function(){
   var SOURCE = ${JSON.stringify(PREVIEW_SOURCE)};
-    var inspect = false, hovered = null, selectedEl = null, highlightBox = null;
+    var inspect = false, hovered = null, selectedEl = null, highlightBox = null, hoverTip = null;
   function cleanClass(el) {
     return (el.getAttribute("class") || "").split(/\s+/).filter(function(c){ return c && c !== "lyra-inspect-hover"; }).join(" ");
   }
@@ -1651,12 +1651,297 @@
     }
     return parts.join(" > ");
   }
+  function escHtml(value) {
+    return String(value == null ? "" : value).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+  function colorHexOf(value) {
+    var m = String(value || "").match(/rgba?\\(\\s*(\\d+)[,\\s]+(\\d+)[,\\s]+(\\d+)(?:[,\\s/]+([\\d.]+))?/i);
+    if (!m) return String(value || "");
+    function h(n) { return Number(n).toString(16).padStart(2, "0"); }
+    var out = "#" + h(m[1]) + h(m[2]) + h(m[3]);
+    if (m[4] != null && Number(m[4]) < 1) out += " " + Math.round(Number(m[4]) * 100) + "%";
+    return out;
+  }
+  function compactSelectorOf(el) {
+    var name = el.tagName ? el.tagName.toLowerCase() : "element";
+    if (el.id) name += "#" + (window.CSS && CSS.escape ? CSS.escape(el.id) : el.id);
+    var cls = cleanClass(el);
+    if (cls) name += "." + cls.split(/\\s+/).map(function (c) { return window.CSS && CSS.escape ? CSS.escape(c) : c; }).join(".");
+    return name;
+  }
+  function px4(cs, prefix) {
+    return [cs[prefix + "Top"], cs[prefix + "Right"], cs[prefix + "Bottom"], cs[prefix + "Left"]].join(" ");
+  }
+  function box4(cs, prefix) {
+    return [cs[prefix + "Top"], cs[prefix + "Right"], cs[prefix + "Bottom"], cs[prefix + "Left"]].map(function (v) {
+      var n = parseFloat(v);
+      return Number.isFinite(n) ? Math.round(n * 100) / 100 : 0;
+    });
+  }
+  function accessibleNameOf(el) {
+    var name = el.getAttribute("aria-label") || el.getAttribute("alt") || el.getAttribute("title") || "";
+    if (!name && el.labels && el.labels.length) name = (el.labels[0].textContent || "").trim();
+    if (!name && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT")) name = el.value || el.getAttribute("placeholder") || "";
+    if (!name) name = (el.textContent || "").replace(/\\s+/g, " ").trim().slice(0, 60);
+    return name || "—";
+  }
+  function roleOf(el) {
+    var explicit = el.getAttribute("role");
+    if (explicit) return explicit;
+    var tag = String(el.tagName || "").toLowerCase();
+    var map = {
+      a: el.hasAttribute("href") ? "link" : "generic", button: "button", img: "img", input: "textbox",
+      textarea: "textbox", select: "combobox", nav: "navigation", main: "main", header: "banner",
+      footer: "contentinfo", section: "region", article: "article", aside: "complementary",
+      ul: "list", ol: "list", li: "listitem", h1: "heading", h2: "heading", h3: "heading",
+      h4: "heading", h5: "heading", h6: "heading", table: "table", form: "form", dialog: "dialog"
+    };
+    return map[tag] || "generic";
+  }
+  function keyboardFocusable(el) {
+    if (el.hasAttribute("tabindex")) return parseInt(el.getAttribute("tabindex"), 10) >= 0;
+    if (el.isContentEditable) return true;
+    var tag = String(el.tagName || "").toLowerCase();
+    if (tag === "a") return el.hasAttribute("href");
+    if (tag === "button" || tag === "select" || tag === "textarea" || tag === "summary") return !el.disabled;
+    if (tag === "input") return !el.disabled && el.type !== "hidden";
+    if (tag === "audio" || tag === "video") return el.hasAttribute("controls");
+    return false;
+  }
+  function parseRgb(value) {
+    var m = String(value || "").match(/rgba?\\(\\s*(\\d+)[,\\s]+(\\d+)[,\\s]+(\\d+)(?:[,\\s/]+([\\d.]+))?/i);
+    return m ? { r: Number(m[1]), g: Number(m[2]), b: Number(m[3]), a: m[4] == null ? 1 : Number(m[4]) } : null;
+  }
+  function effectiveBackground(el) {
+    var node = el;
+    var layers = [];
+    while (node && node.nodeType === 1) {
+      var bg = parseRgb(getComputedStyle(node).backgroundColor);
+      if (bg && bg.a > 0) {
+        layers.push(bg);
+        if (bg.a >= 1) break;
+      }
+      node = node.parentElement;
+    }
+    var base = { r: 255, g: 255, b: 255 };
+    for (var i = layers.length - 1; i >= 0; i--) {
+      var l = layers[i];
+      base = {
+        r: Math.round(l.r * l.a + base.r * (1 - l.a)),
+        g: Math.round(l.g * l.a + base.g * (1 - l.a)),
+        b: Math.round(l.b * l.a + base.b * (1 - l.a))
+      };
+    }
+    return base;
+  }
+  function luminanceOf(c) {
+    function ch(v) { var n = v / 255; return n <= 0.03928 ? n / 12.92 : Math.pow((n + 0.055) / 1.055, 2.4); }
+    return 0.2126 * ch(c.r) + 0.7152 * ch(c.g) + 0.0722 * ch(c.b);
+  }
+  function contrastInfo(el, cs) {
+    var fg = parseRgb(cs.color);
+    if (!fg) return null;
+    var bg = effectiveBackground(el);
+    var l1 = luminanceOf(fg) + 0.05;
+    var l2 = luminanceOf(bg) + 0.05;
+    var ratio = Math.round((Math.max(l1, l2) / Math.min(l1, l2)) * 100) / 100;
+    var level = ratio >= 7 ? "AAA" : (ratio >= 4.5 ? "AA" : (ratio >= 3 ? "AA Large" : "Fail"));
+    return { ratio: ratio, level: level, text: ratio + ":1 (" + level + ")", fg: colorHexOf(cs.color), bg: colorHexOf("rgb(" + bg.r + ", " + bg.g + ", " + bg.b + ")") };
+  }
+  function ensureHoverTip() {
+    if (hoverTip) return hoverTip;
+    hoverTip = document.createElement("div");
+    hoverTip.setAttribute("data-lyra-inspect-tip", "1");
+    hoverTip.style.cssText = "position:fixed;z-index:2147483646;display:none;pointer-events:none;box-sizing:border-box;min-width:300px;max-width:360px;padding:9px 11px;border-radius:6px;border:1px solid #d0d7de;background:#ffffff;color:#202124;font:12px/1.45 'Microsoft YaHei','Segoe UI',sans-serif;box-shadow:0 8px 26px rgba(0,0,0,.22);";
+    document.body.appendChild(hoverTip);
+    return hoverTip;
+  }
+  function positionHoverTip() {
+    if (!hoverTip || hoverTip.style.display === "none" || !hovered) return;
+    var r = hovered.getBoundingClientRect();
+    var tw = hoverTip.offsetWidth;
+    var th = hoverTip.offsetHeight;
+    var left = r.left;
+    var top = r.bottom + 7;
+    if (top + th > window.innerHeight - 8) top = Math.max(8, r.top - th - 7);
+    if (left + tw > window.innerWidth - 8) left = window.innerWidth - tw - 8;
+    if (left < 8) left = 8;
+    hoverTip.style.left = Math.round(left) + "px";
+    hoverTip.style.top = Math.round(top) + "px";
+  }
+  function hoverTipRow(label, value) {
+    return '<div style="display:flex;justify-content:space-between;gap:14px;line-height:1.6"><span style="color:#6b7280;flex:0 0 auto">' + escHtml(label) + '</span><span style="text-align:right;max-width:250px;overflow-wrap:anywhere;white-space:normal">' + value + '</span></div>';
+  }
+  function swatchHtml(hex) {
+    return '<span style="display:inline-block;width:10px;height:10px;border:1px solid rgba(0,0,0,.18);border-radius:2px;background:' + escHtml(hex) + ';vertical-align:-1px;margin-right:5px"></span>';
+  }
+  function updateHoverTip(el) {
+    if (!el) return;
+    var cs = getComputedStyle(el);
+    var r = el.getBoundingClientRect();
+    var tip = ensureHoverTip();
+    var font = cs.fontSize + " " + (cs.fontWeight !== "400" ? cs.fontWeight + " " : "") + cs.fontFamily;
+    var bg = colorHexOf(cs.backgroundColor);
+    var border = cs.borderTopWidth !== "0px" && cs.borderTopStyle !== "none"
+      ? cs.borderTopWidth + " " + cs.borderTopStyle + " " + colorHexOf(cs.borderTopColor)
+      : "";
+    var info = contrastInfo(el, cs);
+    var html = '<div style="font-weight:600;color:#7b1fa2;font:600 12px/1.5 Consolas, monospace;word-break:break-all">' + escHtml(compactSelectorOf(el)) + '</div>';
+    html += '<div style="color:#374151;font-size:12px;margin-bottom:3px">' + (Math.round(r.width * 100) / 100) + ' × ' + (Math.round(r.height * 100) / 100) + '</div>';
+    html += hoverTipRow("Color", swatchHtml(colorHexOf(cs.color)) + escHtml(colorHexOf(cs.color)));
+    html += hoverTipRow("Font", escHtml(font));
+    html += hoverTipRow("Padding", escHtml(px4(cs, "padding")));
+    html += hoverTipRow("Margin", escHtml(px4(cs, "margin")));
+    if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") html += hoverTipRow("Background", swatchHtml(bg) + escHtml(bg));
+    if (border) html += hoverTipRow("Border", escHtml(border));
+    html += '<div style="height:1px;background:#eceff1;margin:7px 0 5px"></div>';
+    html += '<div style="font-size:10px;color:#6b7280;letter-spacing:.08em;margin-bottom:2px">ACCESSIBILITY</div>';
+    html += hoverTipRow("Name", escHtml(accessibleNameOf(el)));
+    html += hoverTipRow("Role", escHtml(roleOf(el)));
+    html += hoverTipRow("Keyboard-focusable", keyboardFocusable(el) ? "✓" : "✕");
+    if (info) html += hoverTipRow("Contrast", escHtml(info.text));
+    tip.innerHTML = html;
+    tip.style.display = "block";
+    positionHoverTip();
+  }
+  function specificityOf(selector) {
+    try {
+      var s = String(selector || "");
+      var ids = (s.match(/#[\\w-]+/g) || []).length;
+      var classes = (s.match(/\\.[\\w-]+/g) || []).length + (s.match(/\\[[^\\]]+\\]/g) || []).length + (s.match(/:{1,2}[\\w-]+/g) || []).length;
+      var tags = (s.replace(/#[\\w-]+/g, "").replace(/\\.[\\w-]+/g, "").replace(/\\[[^\\]]+\\]/g, "").replace(/:{1,2}[\\w-]+/g, "").match(/[a-zA-Z][\\w-]*/g) || []).length;
+      return ids * 10000 + classes * 100 + tags;
+    } catch (e) { return 0; }
+  }
+  function styleRulesFor(el) {
+    var rules = [];
+    function declarationsOf(cssText) {
+      var out = [];
+      var text = String(cssText || "");
+      var start = 0;
+      var depth = 0;
+      var quote = "";
+      function pushPart(part) {
+        var idx = part.indexOf(":");
+        if (idx <= 0) return;
+        var prop = part.slice(0, idx).trim();
+        var value = part.slice(idx + 1).trim();
+        var important = false;
+        if (/!\\s*important\\s*$/i.test(value)) {
+          important = true;
+          value = value.replace(/!\\s*important\\s*$/i, "").trim();
+        }
+        if (prop) {
+          var probe = document.createElement("span");
+          probe.style.cssText = prop + ": " + value + (important ? " !important" : "");
+          var longhands = [];
+          for (var k = 0; k < probe.style.length; k++) longhands.push(probe.style[k]);
+          out.push({ prop: prop, value: value, important: important, longhands: longhands.length ? longhands : [prop] });
+        }
+      }
+      for (var i = 0; i < text.length; i++) {
+        var ch = text[i];
+        if (quote) { if (ch === quote && text[i - 1] !== "\\\\") quote = ""; continue; }
+        if (ch === '"' || ch === "'") { quote = ch; continue; }
+        if (ch === "(") depth++;
+        else if (ch === ")") depth = Math.max(0, depth - 1);
+        else if (ch === ";" && depth === 0) { pushPart(text.slice(start, i)); start = i + 1; }
+      }
+      pushPart(text.slice(start));
+      return out;
+    }
+    var inline = declarationsOf(el.style.cssText);
+    if (inline.length) rules.push({ selector: "element.style", source: "inline", inline: true, specificity: 1000000, declarations: inline });
+    function walkRules(list, source) {
+      for (var i = 0; i < list.length; i++) {
+        var rule = list[i];
+        if (!rule) continue;
+        if (rule.selectorText) {
+          var selectors = String(rule.selectorText).split(",");
+          var matched = [];
+          var best = -1;
+          selectors.forEach(function (sel) {
+            var trimmed = sel.trim();
+            if (!trimmed) return;
+            try {
+              if (el.matches(trimmed)) {
+                matched.push(trimmed);
+                best = Math.max(best, specificityOf(trimmed));
+              }
+            } catch (e) {}
+          });
+          if (matched.length) {
+            rules.push({ selector: matched.join(", "), source: source || "inline <style>", inline: false, specificity: best, declarations: declarationsOf(rule.style.cssText) });
+          }
+        } else if (rule.cssRules) {
+          try {
+            if (rule.type === 4 && rule.conditionText && !window.matchMedia(rule.conditionText).matches) continue;
+          } catch (e) {}
+          walkRules(rule.cssRules, source);
+        }
+      }
+    }
+    try {
+      for (var si = 0; si < document.styleSheets.length; si++) {
+        var sheet = document.styleSheets[si];
+        var source = sheet.href ? String(sheet.href).split("/").pop() : "inline <style>";
+        var list = null;
+        try { list = sheet.cssRules; } catch (e) { continue; }
+        if (list) walkRules(list, source);
+      }
+    } catch (e) {}
+      var flat = [];
+    rules.forEach(function (rule) {
+      (rule.declarations || []).forEach(function (decl) {
+        decl._rank = [decl.important ? 1 : 0, rule.inline ? 1 : 0, rule.specificity || 0, flat.length];
+        flat.push(decl);
+      });
+    });
+      var winners = {};
+    flat.forEach(function (decl) {
+      var keys = decl.longhands || [decl.prop];
+      keys.forEach(function (key) {
+        var prev = winners[key];
+        if (!prev) { winners[key] = decl; return; }
+        var a = decl._rank, b = prev._rank;
+        if (a[0] > b[0] || (a[0] === b[0] && (a[1] > b[1] || (a[1] === b[1] && (a[2] > b[2] || (a[2] === b[2] && a[3] > b[3])))))) winners[key] = decl;
+      });
+    });
+    flat.forEach(function (decl) {
+      var keys = decl.longhands || [decl.prop];
+      decl.effective = keys.every(function (key) { return winners[key] === decl; });
+      delete decl._rank;
+    });
+    return rules.slice(0, 30);
+  }
+  function boxInfoOf(el, cs, rect) {
+    var margin = box4(cs, "margin");
+    var padding = box4(cs, "padding");
+    var border = box4(cs, "border");
+    var contentWidth = Math.max(0, Math.round((rect.width - margin[1] - margin[3] - border[1] - border[3] - padding[1] - padding[3]) * 100) / 100);
+    var contentHeight = Math.max(0, Math.round((rect.height - margin[0] - margin[2] - border[0] - border[2] - padding[0] - padding[2]) * 100) / 100);
+    return { width: Math.round(rect.width * 100) / 100, height: Math.round(rect.height * 100) / 100, margin: margin, padding: padding, border: border, contentWidth: contentWidth, contentHeight: contentHeight };
+  }
+  function a11yInfoOf(el, cs) {
+    var info = contrastInfo(el, cs);
+    var aria = [];
+    try {
+      for (var i = 0; i < el.attributes.length; i++) {
+        var a = el.attributes[i];
+        if (a.name.indexOf("aria-") === 0) aria.push({ name: a.name, value: a.value });
+      }
+    } catch (e) {}
+    return { name: accessibleNameOf(el), role: roleOf(el), focusable: keyboardFocusable(el), contrast: info ? info.text : "", contrastRatio: info ? info.ratio : null, aria: aria };
+  }
   var COMPUTED = ["display","position","top","right","bottom","left","zIndex","float","clear","boxSizing","overflow","overflowX","overflowY","visibility","flexDirection","flexWrap","justifyContent","alignItems","alignContent","alignSelf","gap","rowGap","columnGap","flexGrow","flexShrink","flexBasis","order","gridTemplateColumns","gridTemplateRows","gridAutoFlow","gridColumn","gridRow","width","minWidth","maxWidth","height","minHeight","maxHeight","aspectRatio","paddingTop","paddingRight","paddingBottom","paddingLeft","marginTop","marginRight","marginBottom","marginLeft","fontFamily","fontSize","fontWeight","fontStyle","lineHeight","letterSpacing","wordSpacing","textAlign","textIndent","textTransform","textDecoration","whiteSpace","wordBreak","overflowWrap","color","backgroundColor","backgroundImage","backgroundSize","backgroundPosition","backgroundRepeat","borderWidth","borderStyle","borderColor","borderRadius","outline","boxShadow","opacity","transform","transformOrigin","transition","filter","backdropFilter","textShadow","clipPath","objectFit","objectPosition","mixBlendMode","pointerEvents","userSelect","isolation","willChange","appearance","resize","cursor","listStyleType","tableLayout","borderCollapse","verticalAlign"];
   function pick(el) {
     var cs = getComputedStyle(el);
     var computed = {};
     COMPUTED.forEach(function(p){ computed[p] = cs[p]; });
     var text = (el.textContent || "").replace(/\\s+/g, " ").trim().slice(0, 100);
+    var rect = el.getBoundingClientRect();
     return {
       srcId: el.getAttribute("data-lyra-src") || "",
       tag: el.tagName.toLowerCase(),
@@ -1665,7 +1950,11 @@
       className: cleanClass(el),
       inlineStyle: el.getAttribute("style") || "",
       computed: computed,
-      text: text
+      text: text,
+      rect: { width: Math.round(rect.width * 100) / 100, height: Math.round(rect.height * 100) / 100 },
+      box: boxInfoOf(el, cs, rect),
+      a11y: a11yInfoOf(el, cs),
+      styleRules: styleRulesFor(el)
     };
   }
   function nearestAnnotatedParent(el) {
@@ -1692,28 +1981,38 @@
     box.style.width = Math.max(2, Math.round(r.width)) + "px";
     box.style.height = Math.max(2, Math.round(r.height)) + "px";
     box.style.display = "block";
+    if (hoverTip && hoverTip.style.display !== "none") positionHoverTip();
   }
   function clearHover() {
     hovered = null;
     if (highlightBox) highlightBox.style.display = "none";
+    if (hoverTip) hoverTip.style.display = "none";
   }
-  function setHover(el) {
-    if (hovered === el) { updateHighlightBox(); return; }
+  function setHover(el, showTip) {
+    if (hovered === el) {
+      updateHighlightBox();
+      if (showTip && inspect && el) updateHoverTip(el);
+      return;
+    }
     hovered = el;
     if (!el) { clearHover(); return; }
     updateHighlightBox();
+    if (showTip && inspect && el) updateHoverTip(el);
+    else if (hoverTip) hoverTip.style.display = "none";
   }
   window.addEventListener("scroll", updateHighlightBox, true);
   window.addEventListener("resize", updateHighlightBox);
+  document.addEventListener("mousemove", function(){ if (hoverTip && hoverTip.style.display !== "none") positionHoverTip(); }, true);
   document.addEventListener("mouseover", function(e){
-    if (!inspect) return;
-    var el = annotated(e.target);
-    setHover(el);
-  }, true);
+      if (!inspect) return;
+      var el = annotated(e.target);
+      if (!el) { clearHover(); return; }
+      setHover(el, true);
+    }, true);
   document.addEventListener("mouseout", function(e){
-    if (!inspect) return;
-    if (!e.relatedTarget) clearHover();
-  }, true);
+      if (!inspect) return;
+      if (!e.relatedTarget || !annotated(e.relatedTarget)) clearHover();
+    }, true);
   document.addEventListener("click", function(e){
     if (!inspect) return;
     var el = annotated(e.target);
@@ -1905,6 +2204,7 @@ img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
     $("attrId").value = "";
     $("attrClass").value = "";
     renderInlineStyles("");
+    renderStyleInspector({ styleRules: [], computed: {}, box: null, a11y: null });
     setInspectorEnabled(false);
   }
   // ---------- DOM tree / assets / tabs ----------
@@ -3062,6 +3362,134 @@ function switchTab(name) {
   }
 
       }
+  function renderStyleInspector(data) {
+    const host = $("styleRules");
+    if (!host) return;
+    const rules = Array.isArray(data.styleRules) ? data.styleRules : [];
+    const summary = $("stylesSummary");
+    if (summary) summary.textContent = rules.length ? rules.length + " 条匹配规则" : "";
+    host.innerHTML = "";
+    if (!rules.length) {
+      host.innerHTML = '<div class="inline-style-empty">没有匹配的作者样式规则，或样式在跨域样式表里。</div>';
+    } else {
+      rules.forEach((rule) => {
+        const card = document.createElement("div");
+        card.className = "style-rule" + (rule.inline ? " inline-rule" : "");
+        const head = document.createElement("div");
+        head.className = "style-rule-head";
+        const sel = document.createElement("span");
+        sel.className = "style-rule-selector";
+        sel.textContent = rule.selector || "";
+        sel.title = rule.selector || "";
+        const src = document.createElement("span");
+        src.className = "style-rule-source";
+        src.textContent = rule.source || "style";
+        src.title = src.textContent;
+        head.appendChild(sel);
+        head.appendChild(src);
+        card.appendChild(head);
+        (rule.declarations || []).forEach((dec) => {
+          const row = document.createElement("div");
+          row.className = "style-decl " + (dec.effective ? "effective" : "overridden");
+          row.title = dec.effective ? "当前生效" : "被更高优先级规则覆盖";
+          const prop = document.createElement("span");
+          prop.className = "prop";
+          prop.textContent = dec.prop || "";
+          const value = document.createElement("span");
+          value.className = "value";
+          const rawValue = String(dec.value || "");
+          const propName = String(dec.prop || "").toLowerCase();
+          const isColor = /(^|-)color$|background$|^background-color$|^border(-\w+)?-color$|^outline-color$|^border$|^outline$/.test(propName);
+          function findColorValue(text) {
+            const raw = String(text || "").trim();
+            if (!raw) return "";
+            try { if (window.CSS && CSS.supports("color", raw)) return raw; } catch { }
+            const matches = raw.match(/rgba?\([^)]*\)|hsla?\([^)]*\)|#[0-9a-fA-F]{3,8}/ig) || [];
+            for (const part of matches) { try { if (CSS.supports("color", part)) return part; } catch { } }
+            const tokens = raw.split(/\s+/);
+            for (const token of tokens) { try { if (CSS.supports("color", token)) return token; } catch { } }
+            return "";
+          }
+          const swatchColor = isColor ? findColorValue(rawValue) : "";
+          if (swatchColor) {
+            const sw = document.createElement("span");
+            sw.className = "decl-swatch";
+            sw.style.background = swatchColor;
+            value.appendChild(sw);
+            value.appendChild(document.createTextNode(rawValue));
+          } else {
+            value.textContent = rawValue;
+          }
+          const badge = document.createElement("span");
+          badge.className = "decl-badge";
+          badge.textContent = dec.effective ? "生效" : "覆盖";
+          row.appendChild(prop);
+          row.appendChild(value);
+          row.appendChild(badge);
+          card.appendChild(row);
+        });
+        host.appendChild(card);
+      });
+    }
+    renderComputedStyles(data.computed || {});
+    renderBoxModel(data.box || null);
+    renderAccessibility(data.a11y || null);
+  }
+
+  function renderComputedStyles(computed) {
+    const host = $("computedList");
+    if (!host) return;
+    const keys = ["display", "position", "width", "height", "minWidth", "maxWidth", "margin", "padding", "boxSizing", "color", "backgroundColor", "fontFamily", "fontSize", "fontWeight", "lineHeight", "textAlign", "border", "borderRadius", "overflow", "zIndex", "opacity", "flexDirection", "justifyContent", "alignItems", "gap", "gridTemplateColumns", "transform"];
+    host.innerHTML = "";
+    keys.forEach((key) => {
+      const value = computed[key];
+      if (value == null || value === "") return;
+      const row = document.createElement("div");
+      row.className = "computed-row";
+      const k = document.createElement("span");
+      k.textContent = key.replace(/[A-Z]/g, (m) => "-" + m.toLowerCase());
+      const v = document.createElement("b");
+      v.textContent = value;
+      row.appendChild(k);
+      row.appendChild(v);
+      host.appendChild(row);
+    });
+    if (!host.children.length) host.innerHTML = '<div class="inline-style-empty">暂无 computed 值</div>';
+  }
+
+  function renderBoxModel(box) {
+    const host = $("boxModel");
+    if (!host) return;
+    if (!box) { host.innerHTML = '<div class="inline-style-empty">选中元素后显示盒模型。</div>'; return; }
+    const px = (arr) => (arr || []).map((v) => Math.round(Number(v) || 0) + "px").join(" ");
+    host.innerHTML =
+      '<div class="box-layer box-margin"><div class="box-label">margin</div><div class="box-value">' + escapeHtml(px(box.margin)) + '</div>' +
+        '<div class="box-layer box-border"><div class="box-label">border</div><div class="box-value">' + escapeHtml(px(box.border)) + '</div>' +
+          '<div class="box-layer box-padding"><div class="box-label">padding</div><div class="box-value">' + escapeHtml(px(box.padding)) + '</div>' +
+            '<div class="box-layer box-content"><div class="box-label">content</div><div class="box-value">' + escapeHtml(String(box.contentWidth || 0)) + ' × ' + escapeHtml(String(box.contentHeight || 0)) + '</div></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="box-value" style="margin-top:4px;color:#7b8da0">' + escapeHtml(String(box.width || 0)) + ' × ' + escapeHtml(String(box.height || 0)) + ' 外框</div>';
+  }
+
+  function renderAccessibility(a11y) {
+    const host = $("a11yInfo");
+    if (!host) return;
+    if (!a11y) { host.innerHTML = '<div class="inline-style-empty">选中元素后显示无障碍信息。</div>'; return; }
+    const rows = [
+      ["Name", a11y.name || "—", ""],
+      ["Role", a11y.role || "generic", ""],
+      ["Keyboard-focusable", a11y.focusable ? "是" : "否", a11y.focusable ? "a11y-pass" : "a11y-fail"],
+      ["Contrast", a11y.contrast || "—", a11y.contrastRatio != null ? (a11y.contrastRatio >= 4.5 ? "a11y-pass" : "a11y-fail") : ""],
+    ];
+    if (a11y.aria && a11y.aria.length) {
+      a11y.aria.forEach((item) => rows.push([item.name, item.value, ""]));
+    }
+    host.innerHTML = rows.map((row) =>
+      '<div class="a11y-row"><span>' + escapeHtml(row[0]) + '</span><b class="' + row[2] + '">' + escapeHtml(row[1]) + '</b></div>'
+    ).join("");
+  }
   function infoHtml(data) {
     return '<b>' + escapeHtml(data.tag || "") + "</b> · " +
       escapeHtml(data.selector || "") +
@@ -3114,6 +3542,7 @@ function switchTab(name) {
     $("domNewTag").value = entry.tag;
     syncInspector(data.computed || {});
     renderInlineStyles(data.inlineStyle || "");
+    renderStyleInspector(data);
     setInspectorEnabled(true);
     highlightLine(entry.line, !isReselect && !fromSource, !isReselect && !fromSource, entry.start);
   }

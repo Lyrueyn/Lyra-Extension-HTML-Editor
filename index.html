@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="vendor/codemirror/codemirror.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/hint/show-hint.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/fold/foldgutter.min.css"/>
-  <link rel="stylesheet" href="style.css?v=300"/>
+  <link rel="stylesheet" href="style.css?v=301"/>
 </head>
 <body>
 <div class="app">
@@ -109,6 +109,14 @@
         </div>
         <div id="tabStyle" class="tab-content">
         <div id="selInfo" class="selection-info">Click an element in the preview. Turn on <b>Inspect</b> to intercept clicks. Alt+Click selects parent.</div>
+
+        <section class="inspector-group" id="stylesSection">
+          <h3>Styles <span id="stylesSummary" class="inspector-meta"></span></h3>
+          <div id="styleRules" class="style-rules"><div class="inline-style-empty">选中元素后这里会列出匹配的样式规则，并标记生效 / 被覆盖。</div></div>
+          <details class="inspector-details" id="computedDetails"><summary>Computed</summary><div id="computedList" class="computed-list"></div></details>
+          <details class="inspector-details" id="boxDetails" open><summary>Box model</summary><div id="boxModel" class="box-model"></div></details>
+          <details class="inspector-details" id="a11yDetails" open><summary>Accessibility</summary><div id="a11yInfo" class="a11y-info"></div></details>
+        </section>
 
         <section class="inspector-group">
           <h3>Attributes</h3>
@@ -239,6 +247,6 @@
 <script src="vendor/codemirror/addon/fold/foldcode.min.js"></script>
 <script src="vendor/codemirror/addon/fold/foldgutter.min.js"></script>
 <script src="vendor/codemirror/addon/selection/active-line.min.js"></script>
-<script src="app.js?v=300"></script>
+<script src="app.js?v=301"></script>
 </body>
 </html>

@@ -300,3 +300,10 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 
 - 编辑器插件架构：kind=editor-plugin，可由主程序「编辑器」Tab 加载，也可被 HTML_Reader 嵌入。
 - 缓存 300。
+
+## 1.21.0
+
+- Dev Tool 增强：Inspect hover 浮层（选择器/尺寸/颜色/字体/Padding/Margin/边框/无障碍信息/对比度）。
+- Styles 面板列出匹配规则，标记生效/被覆盖（含简写展开的级联判断）。
+- 新增 Computed、Box model、Accessibility 面板。
+- 缓存 301。

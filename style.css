@@ -997,3 +997,45 @@ html[data-editor-theme="light"] .cm-s-lyra .cm-matched-tag.cm-match-depth-4 { ba
 html[data-editor-theme="light"] .cm-s-lyra .cm-matched-tag.cm-match-depth-5 { background: color-mix(in srgb, var(--tag-depth-5) 42%, transparent) !important; }
 html[data-editor-theme="light"] .cm-s-lyra .cm-matched-tag.cm-match-depth-6 { background: color-mix(in srgb, var(--tag-depth-6) 42%, transparent) !important; }
 html[data-editor-theme="light"] .cm-s-lyra .cm-matched-tag.cm-match-depth-7 { background: color-mix(in srgb, var(--tag-depth-7) 42%, transparent) !important; }
+
+
+/* DevTool: matched styles / computed / box model / accessibility */
+.inspector-meta { color: #617486; font-size: 10px; font-weight: 400; letter-spacing: 0; margin-left: 4px; }
+.style-rules { display: flex; flex-direction: column; gap: 7px; max-height: 430px; overflow: auto; padding-right: 2px; }
+.style-rule { border: 1px solid var(--line); border-radius: 7px; background: var(--panel); overflow: hidden; }
+.style-rule.inline-rule { border-color: rgba(77,159,255,.38); }
+.style-rule-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 8px; background: rgba(255,255,255,.025); border-bottom: 1px solid var(--line); }
+.style-rule-selector { color: #7ee0ff; font: 10.5px Consolas, "Cascadia Mono", monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.style-rule.inline-rule .style-rule-selector { color: var(--accent); }
+.style-rule-source { color: #617486; font-size: 9.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 45%; }
+.style-decl { display: grid; grid-template-columns: 132px minmax(0, 1fr) auto; gap: 6px; align-items: baseline; padding: 3px 8px; border-top: 1px solid rgba(255,255,255,.035); }
+.style-rule .style-decl:first-of-type { border-top: 0; }
+.style-decl .prop { color: #7ec8ff; font: 10px Consolas, "Cascadia Mono", monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.style-decl .value { color: var(--text); font: 10.5px Consolas, "Microsoft YaHei", sans-serif; word-break: break-all; }
+.style-decl.overridden { opacity: .48; }
+.style-decl.overridden .value { text-decoration: line-through; }
+.style-decl .decl-badge { color: #6d8094; font-size: 9px; }
+.style-decl.overridden .decl-badge { color: #b17a86; }
+.style-decl.effective .decl-badge { color: #66d9a8; }
+.inspector-details { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 7px; }
+.inspector-details summary { color: #b9c8d8; font-size: 11px; cursor: pointer; user-select: none; }
+.computed-list { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; max-height: 320px; overflow: auto; }
+.computed-row { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 8px; font: 10.5px Consolas, "Microsoft YaHei", sans-serif; line-height: 1.5; }
+.computed-row span { color: #7ec8ff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.computed-row b { color: var(--text); font-weight: 400; word-break: break-all; }
+.box-model { margin-top: 7px; display: flex; flex-direction: column; gap: 4px; align-items: center; }
+.box-layer { border: 1px dashed #3a5063; border-radius: 5px; padding: 6px 10px; text-align: center; color: #93a7ba; font-size: 10px; }
+.box-layer.box-margin { background: rgba(241,196,110,.08); width: 100%; }
+.box-layer.box-border { background: rgba(255,209,102,.10); width: 92%; }
+.box-layer.box-padding { background: rgba(102,217,168,.10); width: 92%; }
+.box-layer.box-content { background: rgba(77,159,255,.10); width: 92%; color: var(--text); }
+.box-label { color: #7b8da0; font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
+.box-value { color: var(--text); font: 10px Consolas, "Microsoft YaHei", sans-serif; margin-top: 2px; }
+.a11y-info { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.a11y-row { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 8px; font: 10.5px Consolas, "Microsoft YaHei", sans-serif; line-height: 1.5; }
+.a11y-row span { color: #7ec8ff; }
+.a11y-row b { color: var(--text); font-weight: 400; word-break: break-all; }
+.a11y-pass { color: #66d9a8 !important; }
+.a11y-fail { color: #ff9aaa !important; }
+
+.decl-swatch { display: inline-block; width:10px; height:10px; margin-right:5px; border:1px solid rgba(255,255,255,.25); border-radius:2px; vertical-align:-1px; }
