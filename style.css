@@ -857,3 +857,38 @@ html[data-editor-theme="light"] .cm-s-lyra .cm-match-level-2 { background: rgba(
   background: transparent !important;
   box-shadow: inset 3px 0 0 var(--accent);
 }
+
+
+/* Distinct inline-tag colors and tag-color-matched pair highlight */
+html[data-editor-theme="lyra"] {
+  --match-block: #7ee0ff; --match-text: #ffb86c; --match-doc: #58a6ff;
+  --match-style: #d2a8ff; --match-script: #ff79a8; --match-media: #79ffb0; --match-other: #8db6d8;
+}
+html[data-editor-theme="violet"] {
+  --match-block: #c792ea; --match-text: #ffcb6b; --match-doc: #82aaff;
+  --match-style: #c792ea; --match-script: #ff79c6; --match-media: #82aaff; --match-other: #a99ac7;
+}
+html[data-editor-theme="emerald"] {
+  --match-block: #35e6a5; --match-text: #ff9f43; --match-doc: #7ee8c6;
+  --match-style: #ffd166; --match-script: #ff9f43; --match-media: #7ee8c6; --match-other: #8fb9a8;
+}
+html[data-editor-theme="sunset"] {
+  --match-block: #ffa45c; --match-text: #89ddff; --match-doc: #ffd6a5;
+  --match-style: #c792ea; --match-script: #ff5c8a; --match-media: #b8e986; --match-other: #c5a58b;
+}
+html[data-editor-theme="sakura"] {
+  --match-block: #ff9ec4; --match-text: #82aaff; --match-doc: #ffb3d1;
+  --match-style: #b388ff; --match-script: #ff7aa8; --match-media: #82aaff; --match-other: #c79caf;
+}
+html[data-editor-theme="light"] {
+  --match-block: #0b6e4f; --match-text: #b3005c; --match-doc: #0550ae;
+  --match-style: #6f42c1; --match-script: #b3005c; --match-media: #0b5cad; --match-other: #5f7183;
+}
+html[data-editor-theme] .cm-s-lyra .cm-ht-text { color: var(--match-text) !important; }
+html[data-editor-theme] .cm-s-lyra .cm-matched-tag.cm-match-block { background: color-mix(in srgb, var(--match-block) 38%, transparent) !important; }
+html[data-editor-theme] .cm-s-lyra .cm-matched-tag.cm-match-text { background: color-mix(in srgb, var(--match-text) 42%, transparent) !important; }
+html[data-editor-theme] .cm-s-lyra .cm-matched-tag.cm-match-doc { background: color-mix(in srgb, var(--match-doc) 38%, transparent) !important; }
+html[data-editor-theme] .cm-s-lyra .cm-matched-tag.cm-match-style { background: color-mix(in srgb, var(--match-style) 38%, transparent) !important; }
+html[data-editor-theme] .cm-s-lyra .cm-matched-tag.cm-match-script { background: color-mix(in srgb, var(--match-script) 38%, transparent) !important; }
+html[data-editor-theme] .cm-s-lyra .cm-matched-tag.cm-match-media { background: color-mix(in srgb, var(--match-media) 38%, transparent) !important; }
+html[data-editor-theme] .cm-s-lyra .cm-matched-tag.cm-match-other { background: color-mix(in srgb, var(--match-other) 38%, transparent) !important; }

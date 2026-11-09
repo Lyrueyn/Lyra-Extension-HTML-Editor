@@ -275,3 +275,9 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 - 移除整行黑色 source-jump 条：cm-active-source-line 改为透明背景 + accent 左边条。
 - 配对标签高亮保持只覆盖标签名 token。
 - 缓存 296。
+
+## 1.19.7
+
+- 行内标签（span/a/b 等）改用独立主题色，与容器 div 区分。
+- 配对标签高亮颜色改为取对应标签的语法颜色（容器/行内/媒体等分组），不再统一 accent。
+- 缓存 297。
