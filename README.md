@@ -295,3 +295,8 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 - 新页面继续注入 inspector，Inspect/DevTool 在新页面可用。
 - 修复无 <head> 的 HTML 在预览中丢失 base href。
 - 缓存 299。
+
+## 1.20.0
+
+- 编辑器插件架构：kind=editor-plugin，可由主程序「编辑器」Tab 加载，也可被 HTML_Reader 嵌入。
+- 缓存 300。
