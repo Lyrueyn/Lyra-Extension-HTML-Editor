@@ -307,3 +307,7 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 - Styles 面板列出匹配规则，标记生效/被覆盖（含简写展开的级联判断）。
 - 新增 Computed、Box model、Accessibility 面板。
 - 缓存 301。
+
+## 1.22.0
+
+- 源码编辑器补全代码折叠：brace folding helper + 折叠键盘快捷键。

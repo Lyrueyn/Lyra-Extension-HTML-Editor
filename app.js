@@ -1050,6 +1050,10 @@
   }
   function initSourceEditor() {
     if (state.mirror || !window.CodeMirror) return;
+    try {
+      const brace = CodeMirror.fold && CodeMirror.fold.brace;
+      if (brace) ["htmlmixed", "xml", "css", "javascript", "lyra-html"].forEach((mode) => CodeMirror.registerHelper("fold", mode, brace));
+    } catch { }
     const cm = CodeMirror($("sourceEditor"), {
       value: "",
       mode: "lyra-html",
@@ -1070,6 +1074,10 @@
         "Ctrl-Space": (editor) => showCmHint(editor),
         "Shift-Ctrl-Space": (editor) => showCmHint(editor),
         "Shift-Alt-F": () => formatSource(),
+        "Ctrl-Shift-[": "fold",
+        "Ctrl-Shift-]": "unfold",
+        "Ctrl-Alt-[": "foldAll",
+        "Ctrl-Alt-]": "unfoldAll",
       },
     });
     state.mirror = cm;
