@@ -1,7 +1,7 @@
 ﻿{
   "id": "html-editor",
   "name": "HTML 编辑器层",
-  "version": "1.19.8",
+  "version": "1.19.9",
   "entry": "index.html",
   "description": "HTML_Reader 和 Notebook 共用的三栏 HTML 编辑器层：CodeMirror 源码、实时预览、Dev Tool。无独立 Tab，不作为阅读器单独打开。1.0.1：HTML 格式化缩进、CSS 自动排版、按标签层级分色。",
   "kind": "layer",

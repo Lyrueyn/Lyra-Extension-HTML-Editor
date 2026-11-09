@@ -1730,6 +1730,17 @@
     setHover(el);
     send("select", payload);
   }, true);
+  document.addEventListener("click", function(e){
+    if (inspect) return;
+    var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
+    if (!a || a.hasAttribute("download")) return;
+    var raw = a.getAttribute("href") || "";
+    if (!raw || raw.charAt(0) === "#" || /^(javascript:|mailto:|tel:)/i.test(raw)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    send("link", { href: a.href });
+  }, false);
+
   function buildTree(el, depth) {
     if (!el || depth > 12) return null;
     var tagName = el.tagName ? el.tagName.toLowerCase() : "";
@@ -1798,7 +1809,8 @@ img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
     let html = sourceAnnotated;
     if (isDoc) {
       if (/<head[\s>]/i.test(html)) html = html.replace(/<head([^>]*)>/i, "<head$1>" + baseTag + css + consoleTag);
-      else html = css + consoleTag + html;
+      else if (/<html[\s>]/i.test(html)) html = html.replace(/<html([^>]*)>/i, "<html$1><head>" + baseTag + css + consoleTag + "</head>");
+      else html = "<head>" + baseTag + css + consoleTag + "</head>" + html;
       if (/<\/body>/i.test(html)) html = html.replace(/<\/body>/i, script + "</body>");
       else html += script;
     } else {
@@ -1851,6 +1863,7 @@ img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
     if (!frame || event.source !== frame.contentWindow) return;
     const data = event.data || {};
     if (data.source !== PREVIEW_SOURCE) return;
+    if (data.type === "link") { openPreviewLink(data.href); return; }
     if (data.type === "ready") {
       postToPreview("inspect", { value: state.inspectMode });
       postToPreview("getTree", {});
@@ -1867,6 +1880,11 @@ img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
   });
 
   // ---------- 检查器面板 ----------
+  function openPreviewLink(href) {
+    if (!EMBEDDED) return;
+    try { postToParent("open-file", { href: String(href || "") }); } catch { }
+  }
+
   function setInspectorEnabled(enabled) {
     document.querySelectorAll("[data-style]").forEach((el) => { el.disabled = !enabled; });
     $("jumpSourceBtn").disabled = !enabled;

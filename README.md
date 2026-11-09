@@ -288,3 +288,10 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 - 配对标签高亮按标签所在层级取同色，不再按标签类别固定 accent。
 - 深度 0-7 每级独立色，超出循环到 7。
 - 缓存 298。
+
+## 1.19.9
+
+- 编辑预览里点击项目内 HTML 链接，会请求 Reader 打开对应文件：项目树高亮、源码区和预览一起切换。
+- 新页面继续注入 inspector，Inspect/DevTool 在新页面可用。
+- 修复无 <head> 的 HTML 在预览中丢失 base href。
+- 缓存 299。
