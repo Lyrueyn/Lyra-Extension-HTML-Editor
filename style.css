@@ -1057,3 +1057,10 @@ html[data-editor-theme="light"] .dom-class { color: #a23b00; }
 html[data-editor-theme="light"] .dom-text { color: #5f7183; }
 
 body.embedded #editorTheme { display: none !important; }
+
+
+/* 浅色主题补全可读性 */
+html[data-editor-theme="light"] .CodeMirror-hints { background: #ffffff; border-color: #b8c9d8; box-shadow: 0 12px 28px rgba(15,35,60,.18); }
+html[data-editor-theme="light"] .CodeMirror-hint { color: #233244; }
+html[data-editor-theme="light"] .CodeMirror-hint:hover { background: #eaf3fa; color: #0b5f86; }
+html[data-editor-theme="light"] li.CodeMirror-hint-active { background: #0b6b96; color: #ffffff; }

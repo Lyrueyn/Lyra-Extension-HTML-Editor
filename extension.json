@@ -1,7 +1,7 @@
 {
   "id": "html-editor",
   "name": "HTML 编辑器",
-  "version": "1.23.1",
+  "version": "1.23.2",
   "entry": "index.html",
   "description": "编辑器插件：CodeMirror 源码、实时预览、Dev Tool。可由编辑器 Tab 加载，也可被 HTML_Reader 嵌入。",
   "kind": "editor-plugin",
