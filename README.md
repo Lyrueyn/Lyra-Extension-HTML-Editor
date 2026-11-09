@@ -311,3 +311,9 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 ## 1.22.0
 
 - 源码编辑器补全代码折叠：brace folding helper + 折叠键盘快捷键。
+
+## 1.23.0
+
+- DOM 树 hover 高亮预览对应元素。
+- DOM 树跟随编辑器主题，修正浅色主题过亮/对比度问题。
+- 外壳主题现在会一路同步到内嵌 HTML 编辑器。

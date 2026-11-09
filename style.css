@@ -1039,3 +1039,19 @@ html[data-editor-theme="light"] .cm-s-lyra .cm-matched-tag.cm-match-depth-7 { ba
 .a11y-fail { color: #ff9aaa !important; }
 
 .decl-swatch { display: inline-block; width:10px; height:10px; margin-right:5px; border:1px solid rgba(255,255,255,.25); border-radius:2px; vertical-align:-1px; }
+
+
+/* DOM tree: theme-aware hover / active / syntax colors */
+.dom-row:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.dom-row.active { background: color-mix(in srgb, var(--accent) 24%, transparent); outline: 1px solid color-mix(in srgb, var(--accent) 55%, transparent); }
+.dom-tag { color: var(--accent); }
+.dom-id { color: var(--ok); }
+.dom-class { color: var(--pink); }
+.dom-text { color: var(--muted); }
+html[data-editor-theme="light"] .dom-tree { color: #334155; }
+html[data-editor-theme="light"] .dom-row:hover { background: #e8f3fa; }
+html[data-editor-theme="light"] .dom-row.active { background: #d6e9f7; outline: 1px solid #8bbdd8; }
+html[data-editor-theme="light"] .dom-tag { color: #0550ae; }
+html[data-editor-theme="light"] .dom-id { color: #0b6e4f; }
+html[data-editor-theme="light"] .dom-class { color: #a23b00; }
+html[data-editor-theme="light"] .dom-text { color: #5f7183; }

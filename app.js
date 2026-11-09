@@ -148,6 +148,7 @@
     window.addEventListener("message", (event) => {
       const d = event.data || {};
       if (d.channel !== EMBED_CHANNEL) return;
+      if (d.type === "theme") { applyEditorTheme(d.theme || "lyra"); return; }
       if (d.type === "init" || d.type === "set-document") applyEmbeddedDoc(d);
       else if (d.type === "request-document") postToParent("document", { html: getSource() });
       else if (d.type === "file-result") {
@@ -2091,6 +2092,12 @@
         if (target) { clearHover(); var payload = pick(target); selectedEl = target; setHover(target); send("select", payload); }
       } catch(err) {}
     }
+    else if (d.type === "hoverById") {
+      try {
+        var hoveredTarget = document.querySelector("[data-lyra-src=\\"" + String(d.srcId).replace(/"/g, "") + "\\"]");
+        if (hoveredTarget) setHover(hoveredTarget);
+      } catch(err) {}
+    }
     else if (d.type === "reselect") {
       try {
         var el = d.selector ? document.querySelector(d.selector) : null;
@@ -2363,6 +2370,12 @@ function switchTab(name) {
         txt.textContent = node.text;
         row.appendChild(txt);
       }
+      row.addEventListener("mouseenter", () => {
+        if (node.srcId) postToPreview("hoverById", { srcId: node.srcId });
+      });
+      row.addEventListener("mouseleave", () => {
+        postToPreview("clearHighlight", {});
+      });
       row.addEventListener("click", () => {
         if (node.srcId) postToPreview("selectById", { srcId: node.srcId });
       });
