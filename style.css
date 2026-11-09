@@ -1055,3 +1055,5 @@ html[data-editor-theme="light"] .dom-tag { color: #0550ae; }
 html[data-editor-theme="light"] .dom-id { color: #0b6e4f; }
 html[data-editor-theme="light"] .dom-class { color: #a23b00; }
 html[data-editor-theme="light"] .dom-text { color: #5f7183; }
+
+body.embedded #editorTheme { display: none !important; }

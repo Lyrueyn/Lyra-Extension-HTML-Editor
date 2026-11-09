@@ -148,7 +148,7 @@
     window.addEventListener("message", (event) => {
       const d = event.data || {};
       if (d.channel !== EMBED_CHANNEL) return;
-      if (d.type === "theme") { applyEditorTheme(d.theme || "lyra"); return; }
+      if (d.type === "theme") { applyEditorTheme(d.theme || "lyra", false); return; }
       if (d.type === "init" || d.type === "set-document") applyEmbeddedDoc(d);
       else if (d.type === "request-document") postToParent("document", { html: getSource() });
       else if (d.type === "file-result") {
@@ -1034,13 +1034,14 @@
   }
 
   const EDITOR_THEMES = ["lyra", "violet", "emerald", "sunset", "sakura", "light"];
-  function applyEditorTheme(id) {
+  function applyEditorTheme(id, notifyParent) {
     const theme = EDITOR_THEMES.includes(id) ? id : "lyra";
+    if (document.documentElement.dataset.editorTheme === theme) return;
     document.documentElement.dataset.editorTheme = theme;
     try { localStorage.setItem("lyra-editor-theme", theme); } catch { }
     const select = $("editorTheme");
     if (select) select.value = theme;
-    if (EMBEDDED) { try { postToParent("theme", { theme: theme }); } catch { } }
+    if (EMBEDDED && notifyParent !== false) { try { postToParent("theme", { theme: theme }); } catch { } }
   }
   function initEditorTheme() {
     let saved = "lyra";
