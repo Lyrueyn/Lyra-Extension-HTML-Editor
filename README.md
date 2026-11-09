@@ -269,3 +269,9 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 - 配对标签只高亮最近一层配对，避免祖先标签一起亮造成满屏色块。
 - 当前配对高亮使用更强主题 accent 背景。
 - 缓存 295。
+
+## 1.19.6
+
+- 移除整行黑色 source-jump 条：cm-active-source-line 改为透明背景 + accent 左边条。
+- 配对标签高亮保持只覆盖标签名 token。
+- 缓存 296。

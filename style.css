@@ -850,3 +850,10 @@ html[data-editor-theme="sakura"] .cm-s-lyra .cm-match-level-2 { background: rgba
 html[data-editor-theme="light"] .cm-s-lyra .cm-matched-tag { background: rgba(19,143,201,.34) !important; }
 html[data-editor-theme="light"] .cm-s-lyra .cm-match-level-1 { background: rgba(19,143,201,.16) !important; }
 html[data-editor-theme="light"] .cm-s-lyra .cm-match-level-2 { background: rgba(19,143,201,.09) !important; }
+
+
+/* Full-line source jump marker should not paint a black band */
+.cm-active-source-line {
+  background: transparent !important;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
