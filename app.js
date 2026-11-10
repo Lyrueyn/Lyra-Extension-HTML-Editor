@@ -1120,6 +1120,16 @@
     });
     state.mirror = cm;
     if (window.HTMLScriptLang) window.HTMLScriptLang.init(cm);
+    try {
+      let sourceFont = parseFloat(getComputedStyle(cm.getWrapperElement()).fontSize) || 13;
+      cm.getWrapperElement().addEventListener("wheel", (event) => {
+        if (!event.ctrlKey) return;
+        event.preventDefault();
+        sourceFont = Math.max(9, Math.min(24, sourceFont + (event.deltaY < 0 ? 1 : -1)));
+        cm.getWrapperElement().style.fontSize = sourceFont + "px";
+        cm.refresh();
+      }, { passive: false });
+    } catch { }
     cm.on("change", () => {
       if (state.suppressMirror) return;
         scheduleMatchedTags();
@@ -2287,6 +2297,31 @@ a[data-lyra-href] { cursor: pointer; }
   }
 
   // ---------- 预览 ----------
+  function setPreviewZoom(zoom) {
+    const value = Math.max(0.5, Math.min(2, Number(zoom) || 1));
+    const frame = $("previewFrame");
+    if (frame) frame.style.zoom = String(value);
+    const select = $("previewZoom");
+    if (select) {
+      const options = Array.from(select.options).map((o) => Number(o.value));
+      const closest = options.reduce((best, cur) => Math.abs(cur - value) < Math.abs(best - value) ? cur : best, options[0] || 1);
+      select.value = String(closest);
+    }
+    return value;
+  }
+  function bindPreviewZoomWheel(frame) {
+    try {
+      const win = frame.contentWindow;
+      if (!win || win.__lyraZoomBound) return;
+      win.__lyraZoomBound = true;
+      win.addEventListener("wheel", (event) => {
+        if (!event.ctrlKey) return;
+        event.preventDefault();
+        const current = Number($("previewZoom") && $("previewZoom").value) || 1;
+        setPreviewZoom(event.deltaY < 0 ? current + 0.25 : current - 0.25);
+      }, { passive: false });
+    } catch { }
+  }
   function schedulePreview(reselect = false) {
     clearTimeout(state.previewTimer);
     state.previewTimer = setTimeout(() => renderPreview(reselect), 140);
@@ -2307,6 +2342,7 @@ a[data-lyra-href] { cursor: pointer; }
       state.pendingReselect = reselect ? state.selectedSelector : "";
       const frame = $("previewFrame");
       frame.onload = () => {
+        bindPreviewZoomWheel(frame);
         postToPreview("inspect", { value: state.inspectMode });
         if (state.pendingReselect) {
           postToPreview("reselect", { selector: state.pendingReselect });
@@ -4470,10 +4506,7 @@ function switchTab(name) {
     $("noteSelect").addEventListener("change", (e) => selectNote(e.target.value));
     $("newNoteBtn").addEventListener("click", createNote);
     $("deleteNoteBtn").addEventListener("click", deleteNote);
-    $("previewZoom").addEventListener("change", () => {
-      const zoom = Number($("previewZoom").value) || 1;
-      $("previewFrame").style.zoom = String(zoom);
-    });
+    $("previewZoom").addEventListener("change", () => setPreviewZoom(Number($("previewZoom").value) || 1));
     $("reloadBtn").addEventListener("click", () => renderPreview(false));
     $("inspectBtn").addEventListener("click", () => {
       state.inspectMode = !state.inspectMode;

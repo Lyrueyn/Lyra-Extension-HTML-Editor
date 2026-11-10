@@ -397,3 +397,7 @@ GPL-3.0-only. See [LICENSE](LICENSE). Bundled third-party libraries are listed i
 
 - 内部相对链接完全移除 `href`，只保留 `data-lyra-href`；状态栏不再显示 `lyra-book-assets.local/#`。
 - 锚点 `#id` 点击改为当前预览内滚动。
+
+## 2.6.2
+
+- Ctrl+滚轮只缩放源码字号/预览内容，不缩放整个编辑器界面。
