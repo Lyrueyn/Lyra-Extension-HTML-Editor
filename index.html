@@ -35,6 +35,7 @@
           <span id="sourcePos" class="pane-meta">Ln 1</span>
           <button id="formatBtn" class="ghost" type="button" title="Format HTML (Shift+Alt+F)">Format</button>
           <button id="checkHtmlBtn" class="ghost" type="button" title="Static HTML/CSS/JS checks">Check</button>
+          <button id="validateBtn" class="ghost" type="button" title="本地 HTML 校验（html-validate，不联网）">HTML 校验</button>
           <button id="wrapBtn" class="ghost" type="button" title="Toggle source soft wrap (off: horizontal scroll for long attrs)">Wrap</button>
           <button id="imageBtn" class="ghost" type="button" title="Insert image file">Image</button>
             <button id="sourceFindBtn" class="ghost" type="button" title="Find / Replace (Ctrl+F / Ctrl+H)">Find</button>
@@ -217,6 +218,7 @@
           <div id="tabProblems" class="tab-content" hidden>
             <div class="console-toolbar">
               <button id="recheckBtn" class="ghost" type="button">Recheck</button>
+              <button id="validateRecheckBtn" class="ghost" type="button">HTML 校验</button>
               <span id="problemCount" class="console-count">0 problems</span>
             </div>
             <div class="tab-hint">检查 HTML 标签闭合、重复 id、图片 alt、内联 CSS 括号、内联脚本语法和常见类型错误。点击问题可跳到源码行。</div>
@@ -262,6 +264,7 @@
 <script src="vendor/lint/acorn-loose.js"></script>
 <script src="vendor/lint/js-check.js"></script>
 <script src="vendor/lint/static-check.js"></script>
-<script src="app.js?v=302"></script>
+<script src="vendor/htmlvalidate/html-validate.min.js"></script>
+<script src="app.js?v=303"></script>
 </body>
 </html>

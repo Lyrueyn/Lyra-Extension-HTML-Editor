@@ -353,3 +353,9 @@ GPL-3.0-only. See [LICENSE](LICENSE). Bundled third-party libraries are listed i
 ## 2.0.1
 
 - 内联脚本语法错误时使用 acorn-loose 恢复分析，继续报告类型/数组等其它问题。
+
+## 2.1.0
+
+- 移除在线 Nu validator 调用，改为完全离线的 html-validate 浏览器 bundle。
+- 新增 HTML 校验按钮 / Problems 标签的 HTML 校验：DOCTYPE、必需属性、重复 id、可访问性、标签结构等。
+- 校验完全本地执行，不发送编辑器内容到网络。

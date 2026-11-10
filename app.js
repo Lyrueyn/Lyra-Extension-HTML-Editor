@@ -55,7 +55,9 @@
     sourceFindIndex: -1,
     sourceFindTimer: 0,
     problems: [],
+    validatorProblems: [],
     problemTimer: 0,
+    validatingValidator: false,
   };
 
   // ---------- 宿主桥接 ----------
@@ -2321,6 +2323,81 @@ img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
     setInspectorEnabled(false);
   }
   // ---------- DOM tree / assets / tabs ----------
+  function htmlValidateShortMessage(message) {
+    const msg = String(message || "");
+    let m;
+    if ((m = msg.match(/Duplicate ID [“"]([^”"]+)[”"]/i))) return "重复 ID " + m[1];
+    if (/is missing required [“"]lang[”"] attribute/i.test(msg)) return "html 缺少 lang";
+    if (/is missing required [“"]alt[”"] attribute/i.test(msg)) return "img 缺少 alt";
+    if (/DOCTYPE should be uppercase/i.test(msg)) return "DOCTYPE 建议大写";
+    if (/is missing recommended [“"]type[”"] attribute/i.test(msg)) return "<button> 缺少 type";
+    if (/must have accessible text/i.test(msg)) return "元素缺少可访问文本";
+    if (/Unexpected close-tag/i.test(msg)) return "多余的结束标签";
+    if (/Expected closing tag/i.test(msg) || /Missing close-tag/i.test(msg)) return "标签未正确闭合";
+    if ((m = msg.match(/Attribute [“"]([^”"]+)[”"] not allowed/i))) return "不允许属性 " + m[1];
+    if ((m = msg.match(/Element [“"]([^”"]+)[”"] is missing required/i))) return m[1] + " 缺少必需子元素";
+    if (/is not permitted/i.test(msg)) return "元素位置不允许";
+    if (/must not be empty/i.test(msg)) return "元素内容不能为空";
+    return msg.length > 74 ? msg.slice(0, 73) + "…" : msg;
+  }
+
+  function mergeHtmlProblems(local, external) {
+    if (!external || !external.length) return local;
+    const covered = new Set(["duplicate-id", "img-alt", "missing-lang", "tag-unclosed", "tag-mismatch"]);
+    const filteredLocal = local.filter((p) => !covered.has(p.rule));
+    const merged = filteredLocal.concat(external);
+    const seen = new Set();
+    return merged.filter((p) => {
+      const key = p.line + ":" + (p.ch || 0) + ":" + (p.rule || "") + ":" + (p.message || "");
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }).sort((a, b) => a.line - b.line || (a.ch || 0) - (b.ch || 0)).slice(0, 300);
+  }
+
+  async function validateWithHtmlValidate() {
+    if (state.validatingValidator) return;
+    runStaticCheck(false);
+    const local = state.problems.slice();
+    const source = state.mirror ? state.mirror.getValue() : (currentNote() ? currentNote().html : "");
+    state.validatingValidator = true;
+    $("saveState").textContent = "HTML 校验中…";
+    try {
+      if (!window.HtmlValidateLib) throw new Error("html-validate 没有加载");
+      const hv = new window.HtmlValidateLib.HtmlValidate();
+      const report = await hv.validateString(source || "", state.currentRel || "document.html");
+      const messages = [];
+      for (const result of report.results || []) {
+        for (const m of result.messages || []) messages.push(m);
+      }
+      const external = messages.map((m) => ({
+        line: m.line || 1,
+        ch: Math.max(0, (m.column || 1) - 1),
+        severity: m.severity === 2 ? "error" : "warning",
+        rule: "hv-" + (m.ruleId || "issue"),
+        message: htmlValidateShortMessage(m.message),
+        full: m.message,
+        extract: m.selector || "",
+        source: "html-validate",
+      }));
+      state.validatorProblems = external;
+      state.problems = mergeHtmlProblems(local, external);
+      updateProblemBadge();
+      renderProblems();
+      switchTab("problems");
+      $("saveState").textContent = state.problems.length ? "发现 " + state.problems.length + " 个问题" : "HTML 校验通过";
+    } catch (e) {
+      state.validatorProblems = [];
+      state.problems = local;
+      updateProblemBadge();
+      renderProblems();
+      $("saveState").textContent = "HTML 校验失败，已保留本地检查";
+      alert("HTML 校验失败：" + String(e && e.message ? e.message : e));
+    } finally {
+      state.validatingValidator = false;
+    }
+  }
+
   function updateProblemBadge() {
     const count = state.problems.length;
     const badge = $("problemsTabCount");
@@ -2356,6 +2433,7 @@ img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
       const msg = document.createElement("span");
       msg.className = "problem-msg";
       msg.textContent = problem.message;
+      if (problem.full || problem.extract) item.title = [problem.full || problem.message, problem.extract ? "代码片段：" + problem.extract : ""].filter(Boolean).join("\n");
       const rule = document.createElement("span");
       rule.className = "problem-rule";
       rule.textContent = problem.rule || "";
@@ -2378,11 +2456,13 @@ img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
   function runStaticCheck(manual) {
     clearTimeout(state.problemTimer);
     const source = state.mirror ? state.mirror.getValue() : (currentNote() ? currentNote().html : "");
+    let local = [];
     try {
-      state.problems = window.HTMLStaticCheck ? window.HTMLStaticCheck.analyze(source || "") : [];
+      local = window.HTMLStaticCheck ? window.HTMLStaticCheck.analyze(source || "") : [];
     } catch (e) {
-      state.problems = [{ line: 1, ch: 0, severity: "error", rule: "checker", message: "静态检查失败：" + String(e && e.message ? e.message : e) }];
+      local = [{ line: 1, ch: 0, severity: "error", rule: "checker", message: "静态检查失败：" + String(e && e.message ? e.message : e) }];
     }
+    state.problems = state.validatorProblems && state.validatorProblems.length ? mergeHtmlProblems(local, state.validatorProblems) : local;
     updateProblemBadge();
     renderProblems();
     if (manual) {
@@ -2393,6 +2473,7 @@ img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
 
   function scheduleProblems(delay) {
     clearTimeout(state.problemTimer);
+    state.validatorProblems = [];
     state.problemTimer = setTimeout(() => { runStaticCheck(false); }, delay == null ? 700 : delay);
   }
 
@@ -4175,6 +4256,8 @@ function switchTab(name) {
     $("formatBtn").addEventListener("click", formatSource);
     $("checkHtmlBtn").addEventListener("click", () => runStaticCheck(true));
     $("recheckBtn").addEventListener("click", () => runStaticCheck(true));
+    $("validateBtn").addEventListener("click", () => validateWithHtmlValidate());
+    $("validateRecheckBtn").addEventListener("click", () => validateWithHtmlValidate());
     $("wrapBtn").addEventListener("click", () => {
       const cm = state.mirror;
       if (!cm) return;

@@ -42,3 +42,13 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+
+
+## html-validate
+
+Files under `vendor/htmlvalidate/html-validate.min.js`.
+
+Copyright (c) 2017-2024 html-validate contributors.
+
+MIT License — same permission text as CodeMirror above. The browser bundle
+includes html-validate's MIT-licensed dependencies.
