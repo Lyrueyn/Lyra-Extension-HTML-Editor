@@ -332,3 +332,9 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 - 内容盒显示 content 实际宽高；底部显示 border-box 与 margin-box 尺寸。
 - 修正 content 尺寸计算：不再错误减掉 margin。
 - 支持深色/浅色主题。
+
+## 1.24.1
+
+- 鼠标悬停 Box model 的 margin/border/padding/content 区域时，预览里同步高亮对应区域。
+- margin/border/padding 用四边色带显示，content 用填充块；数值为 0 时也会显示对应区域的描边。
+- 悬停层在 Box model 内高亮，离开后预览自动清除。

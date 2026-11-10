@@ -1623,7 +1623,7 @@
     return `
 (function(){
   var SOURCE = ${JSON.stringify(PREVIEW_SOURCE)};
-    var inspect = false, hovered = null, selectedEl = null, highlightBox = null, hoverTip = null;
+    var inspect = false, hovered = null, selectedEl = null, highlightBox = null, hoverTip = null, boxModelRegion = null, boxModelNodes = [];
   function cleanClass(el) {
     return (el.getAttribute("class") || "").split(/\s+/).filter(function(c){ return c && c !== "lyra-inspect-hover"; }).join(" ");
   }
@@ -2008,6 +2008,85 @@
     if (highlightBox) highlightBox.style.display = "none";
     if (hoverTip) hoverTip.style.display = "none";
   }
+  function clearBoxModelOverlay() {
+    for (var i = 0; i < boxModelNodes.length; i += 1) {
+      if (boxModelNodes[i].parentNode) boxModelNodes[i].parentNode.removeChild(boxModelNodes[i]);
+    }
+    boxModelNodes = [];
+    boxModelRegion = null;
+  }
+  function addBoxRegionNode(rect, color, borderColor) {
+    if (!rect || rect.width <= 0 || rect.height <= 0) return null;
+    var node = document.createElement("div");
+    node.style.cssText = "position:fixed;pointer-events:none;z-index:2147483646;box-sizing:border-box;background:" + color + ";border:1px solid " + borderColor + ";";
+    node.style.left = rect.left + "px";
+    node.style.top = rect.top + "px";
+    node.style.width = rect.width + "px";
+    node.style.height = rect.height + "px";
+    document.body.appendChild(node);
+    boxModelNodes.push(node);
+    return node;
+  }
+  function addBoxRegionLabel(rect, text, color) {
+    var node = document.createElement("div");
+    node.textContent = text.toUpperCase();
+    node.style.cssText = "position:fixed;pointer-events:none;z-index:2147483647;box-sizing:border-box;padding:2px 5px;border-radius:3px;background:" + color + ";color:#15212b;font:700 9px/1.3 Consolas,monospace;letter-spacing:.06em;";
+    node.style.left = Math.max(4, rect.left + 4) + "px";
+    node.style.top = Math.max(4, rect.top + 4) + "px";
+    document.body.appendChild(node);
+    boxModelNodes.push(node);
+  }
+  function addBoxBand(outer, inner, color, borderColor) {
+    var top = inner.top - outer.top;
+    var bottom = outer.bottom - inner.bottom;
+    var left = inner.left - outer.left;
+    var right = outer.right - inner.right;
+    addBoxRegionNode({ left: outer.left, top: outer.top, width: outer.width, height: Math.max(0, top) }, color, borderColor);
+    addBoxRegionNode({ left: outer.left, top: inner.bottom, width: outer.width, height: Math.max(0, bottom) }, color, borderColor);
+    addBoxRegionNode({ left: outer.left, top: inner.top, width: Math.max(0, left), height: inner.height }, color, borderColor);
+    addBoxRegionNode({ left: inner.right, top: inner.top, width: Math.max(0, right), height: inner.height }, color, borderColor);
+  }
+  function drawBoxModelRegion(region) {
+    clearBoxModelOverlay();
+    if (!region || !selectedEl || !selectedEl.isConnected) return;
+    var cs = getComputedStyle(selectedEl);
+    var r = selectedEl.getBoundingClientRect();
+    function metric(prefix, side) {
+      var value = parseFloat(cs[prefix + side]);
+      return isFinite(value) ? value : 0;
+    }
+    var margin = { left: metric("margin", "Left"), right: metric("margin", "Right"), top: metric("margin", "Top"), bottom: metric("margin", "Bottom") };
+    var border = { left: metric("border", "LeftWidth"), right: metric("border", "RightWidth"), top: metric("border", "TopWidth"), bottom: metric("border", "BottomWidth") };
+    var padding = { left: metric("padding", "Left"), right: metric("padding", "Right"), top: metric("padding", "Top"), bottom: metric("padding", "Bottom") };
+    var borderBox = { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height };
+    var paddingBox = { left: r.left + border.left, top: r.top + border.top, right: r.right - border.right, bottom: r.bottom - border.bottom };
+    paddingBox.width = Math.max(0, paddingBox.right - paddingBox.left);
+    paddingBox.height = Math.max(0, paddingBox.bottom - paddingBox.top);
+    var contentBox = { left: paddingBox.left + padding.left, top: paddingBox.top + padding.top, right: paddingBox.right - padding.right, bottom: paddingBox.bottom - padding.bottom };
+    contentBox.width = Math.max(0, contentBox.right - contentBox.left);
+    contentBox.height = Math.max(0, contentBox.bottom - contentBox.top);
+    var marginBox = { left: r.left - margin.left, top: r.top - margin.top, right: r.right + margin.right, bottom: r.bottom + margin.bottom };
+    marginBox.width = Math.max(0, marginBox.right - marginBox.left);
+    marginBox.height = Math.max(0, marginBox.bottom - marginBox.top);
+    var colors = { margin: "rgba(241,196,110,.42)", border: "rgba(255,209,102,.48)", padding: "rgba(102,217,168,.42)", content: "rgba(77,159,255,.36)" };
+    var strong = { margin: "#e0ad57", border: "#e6c35c", padding: "#54bf93", content: "#4d9fff" };
+    boxModelRegion = region;
+    var outlineRect = region === "content" ? contentBox : region === "padding" ? paddingBox : region === "border" ? borderBox : marginBox;
+    if (region === "content") {
+      addBoxRegionNode(contentBox, colors.content, strong.content);
+      addBoxRegionLabel(contentBox, "content", colors.content);
+    } else if (region === "padding") {
+      addBoxBand(paddingBox, contentBox, colors.padding, strong.padding);
+      addBoxRegionLabel(paddingBox, "padding", colors.padding);
+    } else if (region === "border") {
+      addBoxBand(borderBox, paddingBox, colors.border, strong.border);
+      addBoxRegionLabel(borderBox, "border", colors.border);
+    } else if (region === "margin") {
+      addBoxBand(marginBox, borderBox, colors.margin, strong.margin);
+      addBoxRegionLabel(marginBox, "margin", colors.margin);
+    }
+    addBoxRegionNode(outlineRect, "rgba(255,255,255,0)", strong[region]);
+  }
   function setHover(el, showTip) {
     if (hovered === el) {
       updateHighlightBox();
@@ -2022,6 +2101,8 @@
   }
   window.addEventListener("scroll", updateHighlightBox, true);
   window.addEventListener("resize", updateHighlightBox);
+  window.addEventListener("scroll", function(){ if (boxModelRegion) drawBoxModelRegion(boxModelRegion); }, true);
+  window.addEventListener("resize", function(){ if (boxModelRegion) drawBoxModelRegion(boxModelRegion); });
   document.addEventListener("mousemove", function(){ if (hoverTip && hoverTip.style.display !== "none") positionHoverTip(); }, true);
   document.addEventListener("mouseover", function(e){
       if (!inspect) return;
@@ -2100,8 +2181,11 @@
     else if (d.type === "selectById") {
       try {
         var target = document.querySelector("[data-lyra-src=\\"" + String(d.srcId).replace(/"/g, "") + "\\"]");
-        if (target) { clearHover(); var payload = pick(target); selectedEl = target; setHover(target); send("select", payload); }
+        if (target) { clearHover(); clearBoxModelOverlay(); var payload = pick(target); selectedEl = target; setHover(target); send("select", payload); }
       } catch(err) {}
+    }
+    else if (d.type === "boxModelHover") {
+      if (d.region) drawBoxModelRegion(String(d.region)); else clearBoxModelOverlay();
     }
     else if (d.type === "hoverById") {
       try {
@@ -2112,7 +2196,7 @@
     else if (d.type === "reselect") {
       try {
         var el = d.selector ? document.querySelector(d.selector) : null;
-        if (el) { clearHover(); var payload = pick(el); payload.reselect = true; selectedEl = el; setHover(el); send("select", payload); }
+        if (el) { clearHover(); clearBoxModelOverlay(); var payload = pick(el); payload.reselect = true; selectedEl = el; setHover(el); send("select", payload); }
       } catch(err) {}
     }
   });
@@ -3506,19 +3590,42 @@ function switchTab(name) {
       return '<span class="bm-num bm-' + side + (value === 0 ? " is-zero" : "") + '" title="' + escapeHtml(fmt(value) + "px") + '">' + escapeHtml(fmt(value)) + '</span>';
     };
     const layer = (kind, label, values, inner) => {
-      return '<div class="bm-layer bm-' + kind + '">' +
+      return '<div class="bm-layer bm-' + kind + '" data-bm-region="' + kind + '">' +
         '<span class="bm-name">' + label + '</span>' +
         num("top", values[0]) + num("right", values[1]) + num("bottom", values[2]) + num("left", values[3]) +
         inner +
       '</div>';
     };
-    const content = '<div class="bm-content"><div class="bm-content-size">' + escapeHtml(dim(box.contentWidth) + " × " + dim(box.contentHeight)) + '</div><div class="bm-content-label">content</div></div>';
+    const content = '<div class="bm-content" data-bm-region="content"><div class="bm-content-size">' + escapeHtml(dim(box.contentWidth) + " × " + dim(box.contentHeight)) + '</div><div class="bm-content-label">content</div></div>';
     const diagram = layer("margin", "margin", box.margin || [0,0,0,0],
       layer("border", "border", box.border || [0,0,0,0],
         layer("padding", "padding", box.padding || [0,0,0,0], content)));
     host.innerHTML = '<div class="bm-diagram">' + diagram + '</div>' +
       '<div class="bm-footer"><span>外框 <b>' + escapeHtml(dim(box.borderBoxWidth != null ? box.borderBoxWidth : box.width)) + ' × ' + escapeHtml(dim(box.borderBoxHeight != null ? box.borderBoxHeight : box.height)) + '</b></span>' +
       '<span>外边距盒 <b>' + escapeHtml(dim(box.marginBoxWidth != null ? box.marginBoxWidth : box.width)) + ' × ' + escapeHtml(dim(box.marginBoxHeight != null ? box.marginBoxHeight : box.height)) + '</b></span></div>';
+    host.dataset.bmRegion = "";
+    postToPreview("boxModelHover", { region: null });
+  }
+
+  function bindBoxModelHover() {
+    const host = $("boxModel");
+    if (!host || host.dataset.bmHoverBound === "1") return;
+    host.dataset.bmHoverBound = "1";
+    const clearRegion = () => {
+      if (!host.dataset.bmRegion) return;
+      host.dataset.bmRegion = "";
+      host.querySelectorAll("[data-bm-region]").forEach((el) => el.classList.remove("bm-hover"));
+      postToPreview("boxModelHover", { region: null });
+    };
+    host.addEventListener("mouseover", (event) => {
+      const layer = event.target && event.target.closest ? event.target.closest("[data-bm-region]") : null;
+      const region = layer ? layer.dataset.bmRegion : "";
+      if (!region || region === host.dataset.bmRegion) return;
+      host.dataset.bmRegion = region;
+      host.querySelectorAll("[data-bm-region]").forEach((el) => el.classList.toggle("bm-hover", el === layer));
+      postToPreview("boxModelHover", { region: region });
+    });
+    host.addEventListener("mouseleave", clearRegion);
   }
 
   function renderAccessibility(a11y) {
@@ -3983,6 +4090,7 @@ function switchTab(name) {
   function bind() {
   initEditorTheme();
     initSourceEditor();
+    bindBoxModelHover();
     $("formatBtn").addEventListener("click", formatSource);
     $("wrapBtn").addEventListener("click", () => {
       const cm = state.mirror;
@@ -4159,7 +4267,7 @@ function switchTab(name) {
 
   bind();
   bindImageDrop();
-  window.__lyraDebug = { state, applyStyleObject, applySelection, renderPreview, renderBoxModel, getCssProperties, getValueSuggestions, sourceHintList: () => (typeof sourceHintList === "function" ? sourceHintList(state.mirror) : null) };
+  window.__lyraDebug = { state, applyStyleObject, applySelection, renderPreview, renderBoxModel, inspectorScript, getCssProperties, getValueSuggestions, sourceHintList: () => (typeof sourceHintList === "function" ? sourceHintList(state.mirror) : null) };
   if (EMBEDDED) initEmbedded();
   else init().catch(showError);
 })();

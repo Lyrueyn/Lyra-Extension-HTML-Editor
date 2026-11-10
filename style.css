@@ -1025,7 +1025,8 @@ html[data-editor-theme="light"] .cm-s-lyra .cm-matched-tag.cm-match-depth-7 { ba
 .computed-row b { color: var(--text); font-weight: 400; word-break: break-all; }
 .box-model { margin-top: 7px; }
 .bm-diagram { width: 100%; box-sizing: border-box; }
-.bm-layer { position: relative; box-sizing: border-box; border: 1px solid rgba(255,255,255,.10); border-radius: 5px; padding: 17px 24px; }
+.bm-layer { position: relative; box-sizing: border-box; border: 1px solid rgba(255,255,255,.10); border-radius: 5px; padding: 17px 24px; transition: box-shadow .12s ease, border-color .12s ease; }
+.bm-layer.bm-hover, .bm-content.bm-hover { box-shadow: 0 0 0 1px var(--accent), 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); border-color: var(--accent) !important; }
 .bm-margin { background: rgba(241,196,110,.13); border-color: rgba(241,196,110,.40); }
 .bm-border { background: rgba(255,209,102,.16); border-color: rgba(255,209,102,.42); }
 .bm-padding { background: rgba(102,217,168,.13); border-color: rgba(102,217,168,.40); }
