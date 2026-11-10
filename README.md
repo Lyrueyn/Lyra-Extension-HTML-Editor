@@ -363,5 +363,5 @@ GPL-3.0-only. See [LICENSE](LICENSE). Bundled third-party libraries are listed i
 ## 2.2.0
 
 - HTML 校验改为官方 validator/validator 的 vnu.jar，本地 Java 进程执行，不联网。
-- 扩展内置精简 JRE 17 与 vnu.jar；宿主通过 editor.validate-html 调用。
+- 扩展内置精简 JDK 25 与 vnu.jar；宿主通过 editor.validate-html 调用。
 - vnu 不可用时自动回退到离线 html-validate。

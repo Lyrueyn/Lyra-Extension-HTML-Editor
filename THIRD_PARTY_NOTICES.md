@@ -66,6 +66,6 @@ MIT License — same permission text as CodeMirror above.
 
 Files under `validator/jre/`.
 
-OpenJDK 17 JRE, built by Eclipse Temurin/Adoptium.
+OpenJDK 25 JRE, built by Eclipse Temurin/Adoptium.
 Licensed under GPLv2 with the Classpath Exception. See the `legal/` folder
 inside the runtime and https://adoptium.net/ for details.
