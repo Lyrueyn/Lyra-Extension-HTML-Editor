@@ -764,6 +764,19 @@
     }
     return null;
   }
+  function scriptHint(cm) {
+    const base = CodeMirror.hint.javascript ? CodeMirror.hint.javascript(cm) : null;
+    const local = window.HTMLScriptLang && window.HTMLScriptLang.hint ? window.HTMLScriptLang.hint(cm) : null;
+    if (!local || !local.list || !local.list.length) return base || { list: [], from: cm.getCursor(), to: cm.getCursor() };
+    const list = local.list.slice();
+    const seen = new Set(list.map((x) => (typeof x === "string" ? x : x.text)));
+    for (const item of (base && base.list) || []) {
+      const key = typeof item === "string" ? item : item.text;
+      if (!seen.has(key)) { seen.add(key); list.push(item); }
+    }
+    return { list: list, from: local.from, to: local.to };
+  }
+
   function showCmHint(cm) {
     if (!cm || !cm.showHint) return;
     const mode = cm.getModeAt(cm.getCursor());
@@ -772,7 +785,7 @@
       if (helper === "css" || /css/i.test(helper)) {
         cm.showHint({ hint: (editor) => sourceHintList(editor) || CodeMirror.hint.css(editor), completeSingle: false });
       } else if (helper === "javascript" || /javascript/i.test(helper)) {
-        cm.showHint({ hint: CodeMirror.hint.javascript, completeSingle: false });
+        cm.showHint({ hint: (editor) => scriptHint(editor), completeSingle: false });
       } else {
         cm.showHint({ hint: (editor) => sourceHintList(editor) || { list: [], from: editor.getCursor(), to: editor.getCursor() }, completeSingle: false });
       }
@@ -1106,6 +1119,7 @@
       },
     });
     state.mirror = cm;
+    if (window.HTMLScriptLang) window.HTMLScriptLang.init(cm);
     cm.on("change", () => {
       if (state.suppressMirror) return;
         scheduleMatchedTags();

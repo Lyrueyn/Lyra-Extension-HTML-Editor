@@ -365,3 +365,9 @@ GPL-3.0-only. See [LICENSE](LICENSE). Bundled third-party libraries are listed i
 - HTML 校验改为官方 validator/validator 的 vnu.jar，本地 Java 进程执行，不联网。
 - 扩展内置精简 JDK 25 与 vnu.jar；宿主通过 editor.validate-html 调用。
 - vnu 不可用时自动回退到离线 html-validate。
+
+## 2.3.0
+
+- 内联 `<script>` 支持 JS 语法高亮（htmlmixed）、本地符号补全、悬浮提示、参数提示、Ctrl 点击跳转到定义。
+- 复用 JavaScript 编辑器的语言分析核心 `script-language.js`，只分析 `<script>` 块，不影响 HTML/CSS。
+- 悬浮卡显示函数签名、JSDoc、返回类型和内置对象类型。

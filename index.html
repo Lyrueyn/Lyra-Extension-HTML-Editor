@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="vendor/codemirror/codemirror.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/hint/show-hint.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/fold/foldgutter.min.css"/>
-  <link rel="stylesheet" href="style.css?v=302"/>
+  <link rel="stylesheet" href="style.css?v=303"/>
 </head>
 <body>
 <div class="app">
@@ -51,6 +51,8 @@
       </div>
       <div class="code-wrap">
         <div id="sourceEditor" class="source-editor"></div>
+        <div id="scriptHoverCard" class="source-hover-card" hidden></div>
+        <div id="scriptParamHint" class="script-param-hint" hidden></div>
           <div id="sourceFindBar" class="source-find-bar" hidden>
             <div class="source-find-row">
               <input id="sourceFindInput" type="text" placeholder="查找…" spellcheck="false" autocomplete="off"/>
@@ -264,7 +266,9 @@
 <script src="vendor/lint/acorn-loose.js"></script>
 <script src="vendor/lint/js-check.js"></script>
 <script src="vendor/lint/static-check.js"></script>
+<script src="vendor/script-language.js"></script>
 <script src="vendor/htmlvalidate/html-validate.min.js"></script>
-<script src="app.js?v=303"></script>
+<script src="vendor/script-lang.js"></script>
+<script src="app.js?v=304"></script>
 </body>
 </html>
