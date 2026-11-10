@@ -1085,3 +1085,20 @@ html[data-editor-theme="light"] .CodeMirror-hints { background: #ffffff; border-
 html[data-editor-theme="light"] .CodeMirror-hint { color: #233244; }
 html[data-editor-theme="light"] .CodeMirror-hint:hover { background: #eaf3fa; color: #0b5f86; }
 html[data-editor-theme="light"] li.CodeMirror-hint-active { background: #0b6b96; color: #ffffff; }
+
+
+/* Static check (Problems tab) */
+.problem-list { max-height: calc(100vh - 260px); overflow: auto; border-top: 1px solid #1e2b38; padding-top: 4px; }
+.problem-item { display: flex; width: 100%; align-items: flex-start; gap: 7px; border: 0; border-bottom: 1px solid rgba(255,255,255,.04); background: transparent; color: var(--text); text-align: left; padding: 6px 5px; cursor: pointer; font-size: 11px; }
+.problem-item:hover { background: rgba(77,159,255,.10); }
+.problem-icon { flex: 0 0 13px; font-size: 10px; font-weight: 700; }
+.problem-item.error .problem-icon { color: #ff8a9b; }
+.problem-item.warning .problem-icon { color: #e8b84c; }
+.problem-body { min-width: 0; }
+.problem-loc { color: #6d8194; font: 9.5px Consolas, monospace; margin-right: 7px; }
+.problem-msg { color: #dbe6f2; line-height: 1.5; word-break: break-word; }
+.problem-rule { color: #6d8194; font-size: 9px; margin-left: 7px; }
+html[data-editor-theme="light"] .problem-item { color: #233244; border-bottom-color: rgba(15,35,60,.08); }
+html[data-editor-theme="light"] .problem-item:hover { background: #eaf3fa; }
+html[data-editor-theme="light"] .problem-msg { color: #233244; }
+html[data-editor-theme="light"] .problem-loc, html[data-editor-theme="light"] .problem-rule { color: #6b7d8f; }

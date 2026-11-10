@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="vendor/codemirror/codemirror.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/hint/show-hint.min.css"/>
   <link rel="stylesheet" href="vendor/codemirror/addon/fold/foldgutter.min.css"/>
-  <link rel="stylesheet" href="style.css?v=301"/>
+  <link rel="stylesheet" href="style.css?v=302"/>
 </head>
 <body>
 <div class="app">
@@ -34,6 +34,7 @@
         <div class="source-actions">
           <span id="sourcePos" class="pane-meta">Ln 1</span>
           <button id="formatBtn" class="ghost" type="button" title="Format HTML (Shift+Alt+F)">Format</button>
+          <button id="checkHtmlBtn" class="ghost" type="button" title="Static HTML/CSS/JS checks">Check</button>
           <button id="wrapBtn" class="ghost" type="button" title="Toggle source soft wrap (off: horizontal scroll for long attrs)">Wrap</button>
           <button id="imageBtn" class="ghost" type="button" title="Insert image file">Image</button>
             <button id="sourceFindBtn" class="ghost" type="button" title="Find / Replace (Ctrl+F / Ctrl+H)">Find</button>
@@ -106,6 +107,7 @@
           <button class="dev-tab" data-tab="dom" type="button">DOM</button>
           <button class="dev-tab" data-tab="assets" type="button">Assets</button>
             <button class="dev-tab" data-tab="console" type="button">Console<span id="consoleTabCount" class="console-tab-count" hidden>0</span></button>
+            <button class="dev-tab" data-tab="problems" type="button">Problems<span id="problemsTabCount" class="console-tab-count" hidden>0</span></button>
         </div>
         <div id="tabStyle" class="tab-content">
         <div id="selInfo" class="selection-info">Click an element in the preview. Turn on <b>Inspect</b> to intercept clicks. Alt+Click selects parent.</div>
@@ -212,6 +214,14 @@
             <div class="tab-hint">Preview console: logs, JS errors and failed resource loads. Click an entry with a source element to jump.</div>
             <div id="consoleList" class="console-list"></div>
           </div>
+          <div id="tabProblems" class="tab-content" hidden>
+            <div class="console-toolbar">
+              <button id="recheckBtn" class="ghost" type="button">Recheck</button>
+              <span id="problemCount" class="console-count">0 problems</span>
+            </div>
+            <div class="tab-hint">检查 HTML 标签闭合、重复 id、图片 alt、内联 CSS 括号、内联脚本语法和常见类型错误。点击问题可跳到源码行。</div>
+            <div id="problemList" class="problem-list"></div>
+          </div>
       </div>
     </aside>
   </main>
@@ -248,6 +258,9 @@
 <script src="vendor/codemirror/addon/fold/foldgutter.min.js"></script>
   <script src="vendor/codemirror/addon/fold/brace-fold.min.js"></script>
 <script src="vendor/codemirror/addon/selection/active-line.min.js"></script>
-<script src="app.js?v=301"></script>
+<script src="vendor/lint/acorn.js"></script>
+<script src="vendor/lint/js-check.js"></script>
+<script src="vendor/lint/static-check.js"></script>
+<script src="app.js?v=302"></script>
 </body>
 </html>

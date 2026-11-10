@@ -338,3 +338,14 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 - 鼠标悬停 Box model 的 margin/border/padding/content 区域时，预览里同步高亮对应区域。
 - margin/border/padding 用四边色带显示，content 用填充块；数值为 0 时也会显示对应区域的描边。
 - 悬停层在 Box model 内高亮，离开后预览自动清除。
+
+## 2.0.0
+
+- 新增 Problems 静态检查标签：HTML 标签闭合/重复 id/图片 alt、内联 CSS 括号、内联 JS 语法与常见类型错误。
+- 编辑源码后自动检查（700ms 防抖），点击问题跳到源码行。
+- 源码工具栏新增 Check 按钮，Problems 标签可 Recheck。
+- 添加 GPL-3.0-only LICENSE 与 THIRD_PARTY_NOTICES.md。
+
+## License
+
+GPL-3.0-only. See [LICENSE](LICENSE). Bundled third-party libraries are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

@@ -54,6 +54,8 @@
     sourceFindMatches: [],
     sourceFindIndex: -1,
     sourceFindTimer: 0,
+    problems: [],
+    problemTimer: 0,
   };
 
   // ---------- 宿主桥接 ----------
@@ -1094,6 +1096,7 @@
       markDirty();
       schedulePreview(false);
       scheduleSave();
+      scheduleProblems(650);
     });
     cm.on("inputRead", (editor, change) => {
       if (state.suppressMirror) return;
@@ -2318,6 +2321,81 @@ img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
     setInspectorEnabled(false);
   }
   // ---------- DOM tree / assets / tabs ----------
+  function updateProblemBadge() {
+    const count = state.problems.length;
+    const badge = $("problemsTabCount");
+    if (badge) {
+      badge.hidden = count === 0;
+      badge.textContent = String(count);
+      badge.classList.toggle("error", state.problems.some((p) => p.severity === "error"));
+    }
+    const total = $("problemCount");
+    if (total) total.textContent = count + (count === 1 ? " problem" : " problems");
+  }
+
+  function renderProblems() {
+    const list = $("problemList");
+    if (!list) return;
+    list.innerHTML = "";
+    if (!state.problems.length) {
+      list.innerHTML = '<div class="inline-style-empty">没有发现静态问题。</div>';
+      return;
+    }
+    state.problems.forEach((problem, index) => {
+      const item = document.createElement("button");
+      item.type = "button";
+      item.className = "problem-item " + (problem.severity === "error" ? "error" : "warning");
+      const icon = document.createElement("span");
+      icon.className = "problem-icon";
+      icon.textContent = problem.severity === "error" ? "✕" : "!";
+      const body = document.createElement("span");
+      body.className = "problem-body";
+      const loc = document.createElement("span");
+      loc.className = "problem-loc";
+      loc.textContent = "Ln " + problem.line + ", Col " + ((problem.ch || 0) + 1);
+      const msg = document.createElement("span");
+      msg.className = "problem-msg";
+      msg.textContent = problem.message;
+      const rule = document.createElement("span");
+      rule.className = "problem-rule";
+      rule.textContent = problem.rule || "";
+      body.appendChild(loc);
+      body.appendChild(msg);
+      body.appendChild(rule);
+      item.appendChild(icon);
+      item.appendChild(body);
+      item.addEventListener("click", () => gotoProblem(index));
+      list.appendChild(item);
+    });
+  }
+
+  function gotoProblem(index) {
+    const problem = state.problems[index];
+    if (!problem) return;
+    highlightLine(problem.line, true, true);
+  }
+
+  function runStaticCheck(manual) {
+    clearTimeout(state.problemTimer);
+    const source = state.mirror ? state.mirror.getValue() : (currentNote() ? currentNote().html : "");
+    try {
+      state.problems = window.HTMLStaticCheck ? window.HTMLStaticCheck.analyze(source || "") : [];
+    } catch (e) {
+      state.problems = [{ line: 1, ch: 0, severity: "error", rule: "checker", message: "静态检查失败：" + String(e && e.message ? e.message : e) }];
+    }
+    updateProblemBadge();
+    renderProblems();
+    if (manual) {
+      switchTab("problems");
+      $("saveState").textContent = state.problems.length ? "发现 " + state.problems.length + " 个问题" : "没有发现静态问题";
+    }
+  }
+
+  function scheduleProblems(delay) {
+    clearTimeout(state.problemTimer);
+    state.problemTimer = setTimeout(() => { runStaticCheck(false); }, delay == null ? 700 : delay);
+  }
+
 function switchTab(name) {
       state.activeTab = name;
       document.querySelectorAll(".dev-tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
@@ -2332,6 +2410,8 @@ function switchTab(name) {
         renderStyleBlocks();
       } else if (name === "console") {
         renderConsole();
+      } else if (name === "problems") {
+        renderProblems();
       }
     }
     function updateConsoleBadge() {
@@ -3955,6 +4035,7 @@ function switchTab(name) {
     clearSelection();
     renderPreview(false);
     refreshNoteSelect();
+    scheduleProblems(250);
   }
   function selectNote(id) {
     if (!state.notes.has(id)) return;
@@ -4092,6 +4173,8 @@ function switchTab(name) {
     initSourceEditor();
     bindBoxModelHover();
     $("formatBtn").addEventListener("click", formatSource);
+    $("checkHtmlBtn").addEventListener("click", () => runStaticCheck(true));
+    $("recheckBtn").addEventListener("click", () => runStaticCheck(true));
     $("wrapBtn").addEventListener("click", () => {
       const cm = state.mirror;
       if (!cm) return;
