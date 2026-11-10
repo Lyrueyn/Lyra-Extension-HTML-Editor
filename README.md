@@ -349,3 +349,7 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 ## License
 
 GPL-3.0-only. See [LICENSE](LICENSE). Bundled third-party libraries are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+## 2.0.1
+
+- 内联脚本语法错误时使用 acorn-loose 恢复分析，继续报告类型/数组等其它问题。

@@ -39,6 +39,14 @@
     });
   }
 
+  function analyzeLooseAst(code) {
+    const acorn = window.acorn || (typeof acorn !== "undefined" ? acorn : null);
+    if (!acorn || !acorn.loose || typeof acorn.loose.parse !== "function") return null;
+    try {
+      return acorn.loose.parse(code, { ecmaVersion: "latest", sourceType: "module", locations: true, allowHashBang: true });
+    } catch { return null; }
+  }
+
   function lintCode(code) {
     const problems = [];
     let ast;
@@ -48,7 +56,8 @@
       const line = err && err.loc ? err.loc.line : 1;
       const col = err && err.loc ? err.loc.column : 0;
       problems.push({ line, ch: col, severity: "error", rule: "syntax", message: "语法错误：" + String(err && err.message || err).replace(/\s*\(\d+:\d+\)$/, "") });
-      return problems;
+      ast = analyzeLooseAst(code);
+      if (!ast) return problems;
     }
 
     const declarations = [];
