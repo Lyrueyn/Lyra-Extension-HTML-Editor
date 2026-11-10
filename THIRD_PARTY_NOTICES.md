@@ -52,3 +52,20 @@ Copyright (c) 2017-2024 html-validate contributors.
 
 MIT License — same permission text as CodeMirror above. The browser bundle
 includes html-validate's MIT-licensed dependencies.
+
+
+## vnu.jar (Nu HTML Checker)
+
+Files under `validator/vnu.jar`.
+
+Copyright (c) 2013-2026 validator/validator contributors.
+
+MIT License — same permission text as CodeMirror above.
+
+## Bundled Java runtime
+
+Files under `validator/jre/`.
+
+OpenJDK 17 JRE, built by Eclipse Temurin/Adoptium.
+Licensed under GPLv2 with the Classpath Exception. See the `legal/` folder
+inside the runtime and https://adoptium.net/ for details.

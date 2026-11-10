@@ -58,6 +58,7 @@
     validatorProblems: [],
     problemTimer: 0,
     validatingValidator: false,
+    hostRequests: new Map(),
   };
 
   // ---------- 宿主桥接 ----------
@@ -75,6 +76,20 @@
       }, 30000);
     });
   }
+  function requestHost(method, payload) {
+    if (host && !EMBEDDED) return hostCall(method, payload || {});
+    return new Promise((resolve) => {
+      const requestId = "host-" + (++state.hostSeq) + "-" + Date.now();
+      state.hostRequests.set(requestId, resolve);
+      postToParent("host-request", { requestId: requestId, method: method, payload: payload || {} });
+      setTimeout(() => {
+        if (!state.hostRequests.has(requestId)) return;
+        state.hostRequests.delete(requestId);
+        resolve({ ok: false, error: "宿主响应超时" });
+      }, 60000);
+    });
+  }
+
   if (host && !EMBEDDED) {
     host.addEventListener("message", (event) => {
       const data = event.data || {};
@@ -158,6 +173,10 @@
       else if (d.type === "file-result") {
         const resolve = pendingFileRequests.get(d.requestId);
         if (resolve) { pendingFileRequests.delete(d.requestId); resolve(d); }
+      }
+      else if (d.type === "host-result") {
+        const resolve = state.hostRequests.get(d.requestId);
+        if (resolve) { state.hostRequests.delete(d.requestId); resolve(d); }
       }
       else if (d.type === "asset-result" && pendingAssetRequest && d.requestId === pendingAssetRequest.requestId) {         const pending = pendingAssetRequest;         pendingAssetRequest = null;         if (d.ok && d.path) {           insertTextAtCursor('\n<img src="' + escapeAttr(d.path) + '" alt="' + pending.alt + '">\n');           markDirty();           schedulePreview(false);           scheduleSave();         } else {           alert("图片保存失败：" + (d.error || "未知错误"));         }       }
     });
@@ -2362,37 +2381,65 @@ img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
     const source = state.mirror ? state.mirror.getValue() : (currentNote() ? currentNote().html : "");
     state.validatingValidator = true;
     $("saveState").textContent = "HTML 校验中…";
+    let external = null;
     try {
-      if (!window.HtmlValidateLib) throw new Error("html-validate 没有加载");
-      const hv = new window.HtmlValidateLib.HtmlValidate();
-      const report = await hv.validateString(source || "", state.currentRel || "document.html");
-      const messages = [];
-      for (const result of report.results || []) {
-        for (const m of result.messages || []) messages.push(m);
+      const response = await requestHost("editor.validate-html", { html: source || "" });
+      if (response && response.ok && response.json) {
+        const data = JSON.parse(response.json);
+        external = (data.messages || []).map((m) => {
+          const type = m.type || (m.subType === "warning" ? "warning" : "error");
+          return {
+            line: m.firstLine || 1,
+            ch: Math.max(0, (m.firstColumn || 1) - 1),
+            severity: type === "info" ? "warning" : type === "warning" ? "warning" : "error",
+            rule: "vnu-" + (m.subType || type),
+            message: htmlValidateShortMessage(m.message),
+            full: m.message,
+            extract: m.extract || "",
+            source: "vnu",
+          };
+        });
+        $("saveState").textContent = "vnu.jar 校验完成";
+      } else {
+        throw new Error((response && response.error) || "vnu.jar 宿主接口不可用");
       }
-      const external = messages.map((m) => ({
-        line: m.line || 1,
-        ch: Math.max(0, (m.column || 1) - 1),
-        severity: m.severity === 2 ? "error" : "warning",
-        rule: "hv-" + (m.ruleId || "issue"),
-        message: htmlValidateShortMessage(m.message),
-        full: m.message,
-        extract: m.selector || "",
-        source: "html-validate",
-      }));
-      state.validatorProblems = external;
-      state.problems = mergeHtmlProblems(local, external);
+    } catch (e) {
+      // Java/vnu 不可用时回退到完全离线的 html-validate。
+      try {
+        if (!window.HtmlValidateLib) throw e;
+        const hv = new window.HtmlValidateLib.HtmlValidate();
+        const report = await hv.validateString(source || "", state.currentRel || "document.html");
+        const messages = [];
+        for (const result of report.results || []) for (const m of result.messages || []) messages.push(m);
+        external = messages.map((m) => ({
+          line: m.line || 1,
+          ch: Math.max(0, (m.column || 1) - 1),
+          severity: m.severity === 2 ? "error" : "warning",
+          rule: "hv-" + (m.ruleId || "issue"),
+          message: htmlValidateShortMessage(m.message),
+          full: m.message,
+          extract: m.selector || "",
+          source: "html-validate",
+        }));
+        $("saveState").textContent = "vnu 不可用，已用离线校验";
+      } catch (fallbackError) {
+        state.validatorProblems = [];
+        state.problems = local;
+        updateProblemBadge();
+        renderProblems();
+        $("saveState").textContent = "HTML 校验失败，已保留本地检查";
+        alert("HTML 校验失败：" + String(e && e.message ? e.message : e) + "\n" + String(fallbackError && fallbackError.message ? fallbackError.message : fallbackError));
+        state.validatingValidator = false;
+        return;
+      }
+    }
+    try {
+      state.validatorProblems = external || [];
+      state.problems = mergeHtmlProblems(local, state.validatorProblems);
       updateProblemBadge();
       renderProblems();
       switchTab("problems");
       $("saveState").textContent = state.problems.length ? "发现 " + state.problems.length + " 个问题" : "HTML 校验通过";
-    } catch (e) {
-      state.validatorProblems = [];
-      state.problems = local;
-      updateProblemBadge();
-      renderProblems();
-      $("saveState").textContent = "HTML 校验失败，已保留本地检查";
-      alert("HTML 校验失败：" + String(e && e.message ? e.message : e));
     } finally {
       state.validatingValidator = false;
     }
