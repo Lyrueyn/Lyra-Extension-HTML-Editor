@@ -377,3 +377,9 @@ GPL-3.0-only. See [LICENSE](LICENSE). Bundled third-party libraries are listed i
 - 改用 Monaco 自带的 TypeScript 语言服务分析内联 `<script>`，不再使用自写符号推断。
 - 悬浮提示、参数提示、补全、Ctrl 点击定义均由 TypeScript language service 提供，支持 JSDoc、类型推断和 DOM lib。
 - 新增 vendor/monaco-ts.min.js（6.4MB）。
+
+## 2.5.0
+
+- 修复 Monaco TypeScript 语言服务没有加载 DOM lib 的问题，`setAttribute` 等 DOM 方法现在有完整签名和 MDN 文档。
+- `<script>` 内输入普通字母也会触发补全，不再只在输入 `.` 时触发。
+- 悬浮卡增加 kind 和完整文档。

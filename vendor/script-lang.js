@@ -3,6 +3,14 @@
   const MONACO = window.MonacoTS;
   const ts = MONACO && MONACO.ts && (MONACO.ts.typescript || MONACO.ts);
   const LIB = MONACO && MONACO.libFileMap;
+  function libText(file) {
+    if (!LIB) return undefined;
+    if (LIB[file]) return LIB[file];
+    const base = String(file || "").split("/").pop();
+    const candidates = ["lib." + base + ".d.ts", "lib." + base.replace(/^lib\./, "").replace(/\.d\.ts$/, "") + ".d.ts", base + ".d.ts"];
+    for (const name of candidates) if (LIB[name]) return LIB[name];
+    return undefined;
+  }
 
   function esc(value) {
     return String(value == null ? "" : value).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -69,14 +77,15 @@
       getScriptVersion: () => "1",
       getScriptSnapshot: (f) => {
         if (f === fileName) return ts.ScriptSnapshot.fromString(content);
-        if (libs[f]) return ts.ScriptSnapshot.fromString(libs[f]);
+        const libContent = libText(f);
+        if (libContent !== undefined) return ts.ScriptSnapshot.fromString(libContent);
         return undefined;
       },
       getCurrentDirectory: () => "",
-      getDefaultLibFileName: () => "lib.d.ts",
+      getDefaultLibFileName: () => libs["lib.es2022.full.d.ts"] ? "lib.es2022.full.d.ts" : "lib.d.ts",
       getScriptKind: () => ts.ScriptKind.JS,
-      fileExists: (f) => f === fileName || !!libs[f],
-      readFile: (f) => f === fileName ? content : libs[f],
+      fileExists: (f) => f === fileName || libText(f) !== undefined,
+      readFile: (f) => f === fileName ? content : libText(f),
       getNewLine: () => "\n",
     };
     return { fileName: fileName, service: ts.createLanguageService(host) };
@@ -152,6 +161,7 @@
       hoverTimer = setTimeout(() => {
         card.innerHTML = '<div class="source-hover-title"><span class="source-hover-kind">MONACO · TS</span><span class="source-hover-name">' + esc(word.text) + '</span></div>' +
           '<div class="source-hover-sig">' + esc(display(qi.displayParts)) + '</div>' +
+          (qi.kind ? '<div class="source-hover-meta">kind: ' + esc(qi.kind) + '</div>' : "") +
           (docText(qi) ? '<div class="source-hover-doc">' + esc(docText(qi)) + '</div>' : "") +
           '<div class="source-hover-meta">内联脚本 · Ln ' + (pos.line + 1) + '</div>';
         card.hidden = false;

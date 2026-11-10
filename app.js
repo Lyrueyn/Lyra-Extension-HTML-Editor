@@ -1146,7 +1146,7 @@
       } else if (helper === "css" || /css/i.test(helper)) {
         should = /[a-zA-Z-:{;]/.test(text);
       } else if (helper === "javascript" || /javascript/i.test(helper)) {
-        should = text === ".";
+        should = text === "." || /[A-Za-z_$]/.test(text);
       }
       if (!should) return;
       scheduleCmHint(editor, helper === "html" ? 90 : 140);
