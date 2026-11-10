@@ -2172,11 +2172,13 @@
     if (inspect) return;
     var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
     if (!a || a.hasAttribute("download")) return;
-    var raw = a.getAttribute("href") || "";
+    var raw = a.getAttribute("data-lyra-href") || a.getAttribute("href") || "";
     if (!raw || raw.charAt(0) === "#" || /^(javascript:|mailto:|tel:)/i.test(raw)) return;
     e.preventDefault();
     e.stopPropagation();
-    send("link", { href: a.href });
+    var resolved = raw;
+    try { resolved = new URL(raw, document.baseURI).href; } catch (err) { }
+    send("link", { href: resolved });
   }, false);
 
   function buildTree(el, depth) {
@@ -2248,12 +2250,23 @@
 img, video, canvas, svg { max-width: 100%; min-width: 0; height: auto; }
 `;
 
+  function rewritePreviewAnchors(html) {
+    if (!embeddedBaseHref) return html;
+    return String(html || "").replace(/<a\b([^>]*)>/gi, (tag, attrs) => {
+      const match = attrs.match(/\bhref\s*=\s*(["'])([^"']*)\1/i);
+      if (!match) return tag;
+      const href = match[2];
+      if (!href || href.charAt(0) === "#" || /^(?:https?:|mailto:|tel:|javascript:|data:)/i.test(href)) return tag;
+      return tag.replace(match[0], 'data-lyra-href="' + escapeAttr(href) + '" href="#"');
+    });
+  }
+
   function injectPreview(sourceAnnotated, isDoc) {
     const css = "<style>" + BASE_CSS + "</style>";
     const baseTag = embeddedBaseHref ? '<base href="' + escapeAttr(embeddedBaseHref) + '">' : "";
     const script = "<script>" + inspectorScript() + "<\/script>";
     const consoleTag = "<script>" + consoleScript() + "<\/script>";
-    let html = sourceAnnotated;
+    let html = rewritePreviewAnchors(sourceAnnotated);
     if (isDoc) {
       if (/<head[\s>]/i.test(html)) html = html.replace(/<head([^>]*)>/i, "<head$1>" + baseTag + css + consoleTag);
       else if (/<html[\s>]/i.test(html)) html = html.replace(/<html([^>]*)>/i, "<html$1><head>" + baseTag + css + consoleTag + "</head>");

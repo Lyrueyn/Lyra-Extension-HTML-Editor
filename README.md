@@ -387,3 +387,8 @@ GPL-3.0-only. See [LICENSE](LICENSE). Bundled third-party libraries are listed i
 ## 2.5.1
 
 - 悬浮卡类型前缀统一为 FN/PROP/VAR/CLS，底部标记 `Monaco TS · Ln`。
+
+## 2.6.0
+
+- 预览里的相对链接不再暴露 `https://lyra-book-assets.local/...`。
+- 锚点保留在 `data-lyra-href`，点击时解析后交给阅读器打开；状态栏只显示相对/`#`。
