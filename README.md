@@ -371,3 +371,9 @@ GPL-3.0-only. See [LICENSE](LICENSE). Bundled third-party libraries are listed i
 - 内联 `<script>` 支持 JS 语法高亮（htmlmixed）、本地符号补全、悬浮提示、参数提示、Ctrl 点击跳转到定义。
 - 复用 JavaScript 编辑器的语言分析核心 `script-language.js`，只分析 `<script>` 块，不影响 HTML/CSS。
 - 悬浮卡显示函数签名、JSDoc、返回类型和内置对象类型。
+
+## 2.4.0
+
+- 改用 Monaco 自带的 TypeScript 语言服务分析内联 `<script>`，不再使用自写符号推断。
+- 悬浮提示、参数提示、补全、Ctrl 点击定义均由 TypeScript language service 提供，支持 JSDoc、类型推断和 DOM lib。
+- 新增 vendor/monaco-ts.min.js（6.4MB）。

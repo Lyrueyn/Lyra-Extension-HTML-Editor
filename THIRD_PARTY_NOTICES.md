@@ -69,3 +69,17 @@ Files under `validator/jre/`.
 OpenJDK 25 JRE, built by Eclipse Temurin/Adoptium.
 Licensed under GPLv2 with the Classpath Exception. See the `legal/` folder
 inside the runtime and https://adoptium.net/ for details.
+
+
+## Monaco Editor / TypeScript language service
+
+Files under `vendor/monaco-ts.min.js`.
+
+- Monaco Editor: Copyright (c) Microsoft Corporation. MIT License.
+- TypeScript compiler / language service and lib files: Copyright (c) Microsoft
+  Corporation. Apache License 2.0.
+- Full notices are included in `vendor/MONACO-LICENSE.txt` and
+  `vendor/MONACO-THIRD-PARTY-NOTICES.txt`.
+
+The inline `<script>` features use Monaco's bundled TypeScript language
+service (`typescriptServices.js` + `lib.ts`) directly; no Monaco UI is loaded.
