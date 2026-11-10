@@ -392,3 +392,8 @@ GPL-3.0-only. See [LICENSE](LICENSE). Bundled third-party libraries are listed i
 
 - 预览里的相对链接不再暴露 `https://lyra-book-assets.local/...`。
 - 锚点保留在 `data-lyra-href`，点击时解析后交给阅读器打开；状态栏只显示相对/`#`。
+
+## 2.6.1
+
+- 内部相对链接完全移除 `href`，只保留 `data-lyra-href`；状态栏不再显示 `lyra-book-assets.local/#`。
+- 锚点 `#id` 点击改为当前预览内滚动。
