@@ -1930,9 +1930,19 @@
     var margin = box4(cs, "margin");
     var padding = box4(cs, "padding");
     var border = box4(cs, "border");
-    var contentWidth = Math.max(0, Math.round((rect.width - margin[1] - margin[3] - border[1] - border[3] - padding[1] - padding[3]) * 100) / 100);
-    var contentHeight = Math.max(0, Math.round((rect.height - margin[0] - margin[2] - border[0] - border[2] - padding[0] - padding[2]) * 100) / 100);
-    return { width: Math.round(rect.width * 100) / 100, height: Math.round(rect.height * 100) / 100, margin: margin, padding: padding, border: border, contentWidth: contentWidth, contentHeight: contentHeight };
+    var round2 = function (n) { return Math.round(n * 100) / 100; };
+    var contentWidth = Math.max(0, round2(rect.width - border[1] - border[3] - padding[1] - padding[3]));
+    var contentHeight = Math.max(0, round2(rect.height - border[0] - border[2] - padding[0] - padding[2]));
+    var borderBoxWidth = round2(rect.width);
+    var borderBoxHeight = round2(rect.height);
+    return {
+      width: borderBoxWidth, height: borderBoxHeight,
+      borderBoxWidth: borderBoxWidth, borderBoxHeight: borderBoxHeight,
+      marginBoxWidth: round2(borderBoxWidth + margin[1] + margin[3]),
+      marginBoxHeight: round2(borderBoxHeight + margin[0] + margin[2]),
+      margin: margin, padding: padding, border: border,
+      contentWidth: contentWidth, contentHeight: contentHeight
+    };
   }
   function a11yInfoOf(el, cs) {
     var info = contrastInfo(el, cs);
@@ -3483,16 +3493,32 @@ function switchTab(name) {
     const host = $("boxModel");
     if (!host) return;
     if (!box) { host.innerHTML = '<div class="inline-style-empty">选中元素后显示盒模型。</div>'; return; }
-    const px = (arr) => (arr || []).map((v) => Math.round(Number(v) || 0) + "px").join(" ");
-    host.innerHTML =
-      '<div class="box-layer box-margin"><div class="box-label">margin</div><div class="box-value">' + escapeHtml(px(box.margin)) + '</div>' +
-        '<div class="box-layer box-border"><div class="box-label">border</div><div class="box-value">' + escapeHtml(px(box.border)) + '</div>' +
-          '<div class="box-layer box-padding"><div class="box-label">padding</div><div class="box-value">' + escapeHtml(px(box.padding)) + '</div>' +
-            '<div class="box-layer box-content"><div class="box-label">content</div><div class="box-value">' + escapeHtml(String(box.contentWidth || 0)) + ' × ' + escapeHtml(String(box.contentHeight || 0)) + '</div></div>' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="box-value" style="margin-top:4px;color:#7b8da0">' + escapeHtml(String(box.width || 0)) + ' × ' + escapeHtml(String(box.height || 0)) + ' 外框</div>';
+    const fmt = (v) => {
+      const n = Number(v) || 0;
+      return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
+    };
+    const dim = (v) => {
+      const n = Number(v) || 0;
+      return Number.isInteger(n) ? String(n) : String(Math.round(n * 100) / 100);
+    };
+    const num = (side, v) => {
+      const value = Number(v) || 0;
+      return '<span class="bm-num bm-' + side + (value === 0 ? " is-zero" : "") + '" title="' + escapeHtml(fmt(value) + "px") + '">' + escapeHtml(fmt(value)) + '</span>';
+    };
+    const layer = (kind, label, values, inner) => {
+      return '<div class="bm-layer bm-' + kind + '">' +
+        '<span class="bm-name">' + label + '</span>' +
+        num("top", values[0]) + num("right", values[1]) + num("bottom", values[2]) + num("left", values[3]) +
+        inner +
+      '</div>';
+    };
+    const content = '<div class="bm-content"><div class="bm-content-size">' + escapeHtml(dim(box.contentWidth) + " × " + dim(box.contentHeight)) + '</div><div class="bm-content-label">content</div></div>';
+    const diagram = layer("margin", "margin", box.margin || [0,0,0,0],
+      layer("border", "border", box.border || [0,0,0,0],
+        layer("padding", "padding", box.padding || [0,0,0,0], content)));
+    host.innerHTML = '<div class="bm-diagram">' + diagram + '</div>' +
+      '<div class="bm-footer"><span>外框 <b>' + escapeHtml(dim(box.borderBoxWidth != null ? box.borderBoxWidth : box.width)) + ' × ' + escapeHtml(dim(box.borderBoxHeight != null ? box.borderBoxHeight : box.height)) + '</b></span>' +
+      '<span>外边距盒 <b>' + escapeHtml(dim(box.marginBoxWidth != null ? box.marginBoxWidth : box.width)) + ' × ' + escapeHtml(dim(box.marginBoxHeight != null ? box.marginBoxHeight : box.height)) + '</b></span></div>';
   }
 
   function renderAccessibility(a11y) {
@@ -4133,7 +4159,7 @@ function switchTab(name) {
 
   bind();
   bindImageDrop();
-  window.__lyraDebug = { state, applyStyleObject, applySelection, renderPreview, getCssProperties, getValueSuggestions, sourceHintList: () => (typeof sourceHintList === "function" ? sourceHintList(state.mirror) : null) };
+  window.__lyraDebug = { state, applyStyleObject, applySelection, renderPreview, renderBoxModel, getCssProperties, getValueSuggestions, sourceHintList: () => (typeof sourceHintList === "function" ? sourceHintList(state.mirror) : null) };
   if (EMBEDDED) initEmbedded();
   else init().catch(showError);
 })();

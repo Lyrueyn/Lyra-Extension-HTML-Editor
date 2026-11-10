@@ -325,3 +325,10 @@ GNU GPL v3.0。三方组件见 `THIRD_PARTY_NOTICES.md`。
 ## 1.23.2
 
 - 修正极简白主题下源码补全弹窗文字过浅、对比度不足的问题。
+
+## 1.24.0
+
+- Box model 改为 Edge DevTools 风格：四层嵌套色带，margin/border/padding 的 top/right/bottom/left 数值分别贴近对应边。
+- 内容盒显示 content 实际宽高；底部显示 border-box 与 margin-box 尺寸。
+- 修正 content 尺寸计算：不再错误减掉 margin。
+- 支持深色/浅色主题。
