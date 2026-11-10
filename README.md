@@ -383,3 +383,7 @@ GPL-3.0-only. See [LICENSE](LICENSE). Bundled third-party libraries are listed i
 - 修复 Monaco TypeScript 语言服务没有加载 DOM lib 的问题，`setAttribute` 等 DOM 方法现在有完整签名和 MDN 文档。
 - `<script>` 内输入普通字母也会触发补全，不再只在输入 `.` 时触发。
 - 悬浮卡增加 kind 和完整文档。
+
+## 2.5.1
+
+- 悬浮卡类型前缀统一为 FN/PROP/VAR/CLS，底部标记 `Monaco TS · Ln`。

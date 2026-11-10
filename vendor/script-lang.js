@@ -90,6 +90,16 @@
     };
     return { fileName: fileName, service: ts.createLanguageService(host) };
   }
+  function monacoKindLabel(kind) {
+    const k = String(kind || "");
+    if (/function|method|constructor/.test(k)) return "FN";
+    if (/class|interface|enum/.test(k)) return "CLS";
+    if (/property|field|getter|setter/.test(k)) return "PROP";
+    if (/keyword/.test(k)) return "KW";
+    if (/const|let|var|local/.test(k)) return "VAR";
+    if (/module|alias/.test(k)) return "MOD";
+    return "SYM";
+  }
   function display(parts) {
     return (parts || []).map((p) => p.text || "").join("");
   }
@@ -163,7 +173,7 @@
           '<div class="source-hover-sig">' + esc(display(qi.displayParts)) + '</div>' +
           (qi.kind ? '<div class="source-hover-meta">kind: ' + esc(qi.kind) + '</div>' : "") +
           (docText(qi) ? '<div class="source-hover-doc">' + esc(docText(qi)) + '</div>' : "") +
-          '<div class="source-hover-meta">内联脚本 · Ln ' + (pos.line + 1) + '</div>';
+          '<div class="source-hover-meta">Monaco TS · Ln ' + (pos.line + 1) + '</div>';
         card.hidden = false;
         let left = event.clientX + 16;
         let top = event.clientY + 16;
